@@ -1,7 +1,19 @@
-test step by step
-#############################################################################################################################
-The folder is supposed to work for everyone only if cloned in lxplus otherwise it works only for me (dfiorina)
-#############################################################################################################################
+# Ensure the syncronization of the remote log directory
+Raw data are store in ~/GasMon/Readout/logs/ on the remote machine. We use ```rsync``` to sincronize the local folder All_data/logs.
+The GasMon PC is not open to direct connection outside CERN so a tunnel to a lxplus machine (or any PC on the CERN General Network is required)
+### Add on your machine's ~/.ssh/config
+```
+Host lxplus
+    HostName lxplus.cern.ch
+    User <your CERN username>
+Host gasmon_outside
+    HostName 128.141.91.109
+    User gem3
+    ProxyJump lxplus
+```
+### Run All_data/download_data.sh
+Passwords of your lxplus and later of the GasMon machine are requested
+
 
 0)  In 'Gain_FIT' the gain vs voltage charateristic at P0 and T0 is fitted to obtain A and B the input file is 'gain_meas.csv'
     the output file 'anal_parameters.csv' is written here with such parameters and the errors
