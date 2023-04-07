@@ -1,0 +1,10 @@
+#ignore local unused directories
+./Percentage_scan
+./calibration*
+./photo
+./test*
+./weekend_run
+./gainparam*.
+./*.pptx
+#ingore raw data
+./All_data/logs
