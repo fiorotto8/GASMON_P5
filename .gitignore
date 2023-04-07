@@ -1,10 +1,26 @@
 #ignore local unused directories
-./Percentage_scan
-./calibration*
-./photo
-./test*
-./weekend_run
-./gainparam*.
-./*.pptx
+OLD
+photo
+*.pptx
 #ingore raw data
-./All_data/logs
+All_data/logs/*
+#ignore intermediate files created by the ScripDownloadAggregate
+GASMON_WorkingDirectory/Script_downloadAggregate/modified
+GASMON_WorkingDirectory/Script_downloadAggregate/withHeader
+GASMON_WorkingDirectory_stepBYstep/Script_downloadAggregate/modified
+GASMON_WorkingDirectory_stepBYstep/Script_downloadAggregate/withHeader
+Percentage_scan_2022/Script_downloadAggregate/modified
+Percentage_scan_2022/Script_downloadAggregate/withHeader
+#ignore output ScripDownloadAggregate
+GASMON_WorkingDirectory/Script_downloadAggregate/*.csv
+GASMON_WorkingDirectory/Script_downloadAggregate/*.root
+GASMON_WorkingDirectory_stepBYstep/Script_downloadAggregate/*.csv
+GASMON_WorkingDirectory_stepBYstep/Script_downloadAggregate/*.root
+Percentage_scan_2022/Script_downloadAggregate/*.csv
+Percentage_scan_2022/Script_downloadAggregate/*.root
+#ignore all root an csv TEST
+*.root
+*.csv
+*.png
+*.pdf
+*.xlsx
