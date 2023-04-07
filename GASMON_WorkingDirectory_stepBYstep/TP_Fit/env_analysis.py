@@ -9,6 +9,11 @@ import uproot
 import sys
 import os
 from array import array
+import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument("-n", "--name", help="set the name of the dataset",default=None)
+args = parser.parse_args()
 
 def nparr(string):
     return np.array(string, dtype="d")
@@ -84,16 +89,17 @@ for x in f:
     exec(var+"="+str(val))
 f.close()
 
+
 print("#################################################################################################################")
 print("         Chose the Gain measurement to use ")
 print("Copy/Paste one FOLDER name")
 print("#################################################################################################################")
-os.system("ls -lrt ../Gain_FIT")
+os.system("ls -lrt ../../Gain_FIT")
 print("#################################################################################################################")
 folder=input("Insert only the FOLDER name: ")
 
 
-f = open("../Gain_FIT/"+str(folder)+"/fit_parameters.csv", "r")
+f = open("../../Gain_FIT/"+str(folder)+"/fit_parameters.txt", "r")
 print("############################################################")
 print("Gain Fit parameters are:")
 #the input parametrs are declared as variebales as they are neamed in the anal_parameters.csv file
@@ -106,16 +112,45 @@ for x in f:
     exec(var+"="+str(val))
 f.close()
 
-
 print("#################################################################################################################")
 print("         Chose the dataset to analyze ")
 print("Copy/Paste one name from the following list, if it is not present you should generate the dataset")
 print("#################################################################################################################")
-os.system("ls -lrt ../Script_downloadAggregate/*.csv")
+os.system("ls -lrt ../../Script_downloadAggregate/*.csv")
 print("#################################################################################################################")
 input=input("Insert only the datset name: ")
 
-df=pd.read_csv("../Script_downloadAggregate/"+str(input)+".csv", delimiter=";")
+df=pd.read_csv("../../Script_downloadAggregate/"+str(input)+".csv", delimiter=";")
+
+#compute from scratch rate, gain and error
+def rate_calc(timestamp,r0,start):
+#Calculate the hit rate of 55Fe source starting from a r0 measured @ start_date with second precision
+#wite the date in %Y-%m-%d_%H:%M:%S format
+#decay time is 1452.36 days or 12.55E9 seconds
+#NB -> timestamp has to be a list also if it is one-sized
+    def string_to_date(string):
+        return datetime.datetime.strptime(string, '%Y-%m-%d_%H:%M:%S')
+
+    start_date=start+'_12:00:00'
+
+    #r0=300
+    tau=1.255E8#seconds
+
+    rate=np.empty(len(timestamp))
+
+    for i in range(len(timestamp)):
+        dt=(string_to_date(timestamp[i])-string_to_date(start_date)).total_seconds()
+        rate[i]=r0*m.exp(-dt/tau)
+
+    return rate
+
+rate=rate_calc(df["Timestamp"],r0,folder)
+print(rate)
+gain=-1*nparr(df["Mean Current"])/(200*1.6E-19*rate)
+err_gain=nparr(df["Mean Error"])/(200*1.6E-19*rate)
+
+if args.name is None: input=input
+else: input=args.name
 
 print("#################################################################################################################")
 print("CSV file columns: ")
@@ -124,6 +159,7 @@ print(col)
 print("#################################################################################################################")
 
 
+#get average of T, P and gain form the first 1000 samples of hte dataset
 main=ROOT.TFile("root_"+str(input)+".root","RECREATE")
 
 time_all=np.arange(0,len(df[col[0]]))
@@ -132,37 +168,37 @@ etime_all=1E-20*np.ones(len(df[col[0]]))
 V=np.mean(nparr(df["Vmon"]))
 print("V=",V)
 
-
+print("Fitting...")
 ############################################################################################
 main.mkdir("Entry Variables")
 main.cd("Entry Variables")
 #varieables with errorrs
-for i in (3,5,7):
+for i in (3,22):
     grapherr(time_all, df[col[i]], etime_all, df[col[i+1]], "Time (a.u.)", col[i] )
 #variables without errors
-for i in (9,10,11,12,13,14,17,18,19,20,21):
+for i in (5,6,7,3,10,13,14,15,19,20,21,24):
     graph(time_all, df[col[i]], "Time (a.u.)", col[i] )
 #bonus
 graph(time_all, df["T"]/df["P"], "Time (a.u.)", "T/P" )
 ############################################################################################
 
 ############################################################################################
-main.mkdir("Gain vs other variables")
-main.cd("Gain vs other variables")
+main.mkdir("Meas Gain vs other variables")
+main.cd("Meas Gain vs other variables")
 
-for i in (9,10,11,12,13,14,17,18,19,20, 21):
-    grapherr(df[col[i]], df["Gain"], etime_all, df["err gain"],   col[i], "Gain" )
+for i in (5,6,7,3,10,13,14,15):
+    grapherr(df[col[i]], gain, etime_all, err_gain,   col[i], "Gain Measured" )
 #bonus
-grapherr(df["T"]/df["P"],df["Gain"], etime_all, df["err gain"], "T/P", "Gain" )
+grapherr(df["T"]/df["P"],gain, etime_all, err_gain, "T/P", "Gain Measured" )
 ############################################################################################
 
 ############################################################################################
 #graph of the gain vs T and P
 main.cd()
-gtp=ROOT.TGraph2D(len(df["T"]), nparr(df["T"]),nparr(df["P"]), nparr(df["Gain"]));
+gtp=ROOT.TGraph2D(len(df["T"]), nparr(df["T"]),nparr(df["P"]), gain);
 gtp.GetXaxis().SetTitle("Temperature")
 gtp.GetYaxis().SetTitle("Pressure")
-gtp.GetXaxis().SetTitle("Gain")
+gtp.GetXaxis().SetTitle("Gain Measured")
 gtp.Write()
 ############################################################################################
 
@@ -197,7 +233,7 @@ def chi2func(Gi,dGi,a,b,pi,ti):
 a = np.random.uniform(a_min,a_max,int(points)).reshape((int(points),1))
 b = np.random.uniform(b_min,b_max,int(points)).reshape((int(points),1))
 
-chi=chi2func(nparr(df["Gain"]),nparr(df["err gain"]),a,b,nparr(df["P"]),nparr(df["T"]))
+chi=chi2func(gain,err_gain,a,b,nparr(df["P"]),nparr(df["T"]))
 #chi[chi > 1E100] = 1E100
 
 print("Minimum of reduced chi2",np.min(chi))
@@ -211,7 +247,7 @@ p_err=int(int(points)/10)
 #find parameters error
 a_err = np.random.uniform(a[index]-1E-4,a[index]+1E-4,p_err).reshape((p_err,1))
 b_err = np.random.uniform(b[index]-1E-4,b[index]+1E-4,p_err).reshape((p_err,1))
-chi_err=chi2func(nparr(df["Gain"]),nparr(df["err gain"]),a_err,b_err,nparr(df["P"]),nparr(df["T"]))
+chi_err=chi2func(gain,err_gain,a_err,b_err,nparr(df["P"]),nparr(df["T"]))
 probable=chi_err[chi_err>chi[index]+1]
 #print("int(points) >1 (%): ",(len(probable)/p_err)*100)
 
@@ -275,7 +311,7 @@ can1.SaveAs("./output_plots/chi2"+input+".pdf")
 
 ############################################################################################
 f = open("results_"+input+".csv", "w")
-f.write("ndf;"+str(len(df["Gain"])-2)+"\n")
+f.write("ndf;"+str(len(df["Gain Measured"])-2)+"\n")
 f.write("reduced_chi;"+str(chi[index])+"\n")
 f.write("a;"+str(a[index][0])+"\n")
 f.write("e_a;"+str(err_a[0])+"\n")

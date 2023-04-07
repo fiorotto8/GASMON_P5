@@ -136,8 +136,8 @@ plot.Write()
 ########################################################################################################################################################################################################################################################################################################################################################################################################################################################################
 
 
-col_write=["A", "B", "T0", "P0", "H0", "Vset", "r0", "Rdivider"]
-write=[Exponential.GetParameter(0),Exponential.GetParameter(1),T0,P0, H0, m.log(2E4/Exponential.GetParameter(0))/Exponential.GetParameter(1), rate_plateau, av_Req]
+col_write=["A","eA", "B","eB", "T0", "P0", "H0", "Vset", "r0", "Rdivider"]
+write=[Exponential.GetParameter(0),Exponential.GetParError(0),Exponential.GetParameter(1),Exponential.GetParError(1),T0,P0, H0, m.log(2E4/Exponential.GetParameter(0))/Exponential.GetParameter(1), rate_plateau, av_Req]
 
 for i in range(len(col_write)):
     print(col_write[i], write[i])
@@ -145,7 +145,7 @@ for i in range(len(col_write)):
 #create DataFrame
 df=pd.DataFrame( {"Col": col_write, "Parameters": write  } )
 #write dataframe
-df.to_csv("fit_parameters.csv", sep=';', header=False, index=False, mode='w')
+df.to_csv("fit_parameters.txt", sep=';', header=False, index=False, mode='w')
 
 
 

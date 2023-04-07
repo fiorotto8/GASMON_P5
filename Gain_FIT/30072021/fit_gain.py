@@ -5,6 +5,8 @@ import statistics as stat
 import math as m
 import datetime
 import tqdm
+def nparr(string):
+    return np.array(string, dtype="d")
 
 main=ROOT.TFile("result_fit.root","RECREATE")#root file creation
 
@@ -22,7 +24,7 @@ print("Shift is: ", cal_off)
 #cal_off=1.02
 #################################
 
-g=pd.read_csv(  "gain-meas.csv"  ,   usecols=["V","G","err"] ,  delimiter=";"  )
+g=pd.read_csv(  "gain-meas.csv"  ,   usecols=["V","G","err","RatePlat"] ,  delimiter=";"  )
 
 Exponential=ROOT.TF1("Exponential","[0]*exp([1]*x)",min(g["V"]),max(g["V"]))
 Exponential.SetParNames("Constant","Slope")
@@ -63,17 +65,31 @@ cv.SaveAs("gainVSvoltage.pdf")
 cv.SaveAs("gainVSvoltage.png")
 
 ########################################################################################################################################################################################################################################################################################################################################################################################################################################################################
+f = open("env.txt", "r")
+T,P=[],[]
+for x in f:
+    a=x.split(";",1)
+    T.append(float(a[0]))
+    P.append(float(a[1].split("\n",1)[0]))
+f.close()
+
+T=nparr(T)
+P=nparr(P)
+########################################################################################################################################################################################################################################################################################################################################################################################################################################################################
 
 A=Exponential.GetParameter(0)
 eA=Exponential.GetParError(0)
 B=Exponential.GetParameter(1)
 eB=Exponential.GetParError(1)
 
-f = open("fit_parameters.csv", "w")
+f = open("fit_parameters.txt", "w")
 f.write("A;"+str(A)+"\n")
 f.write("eA;"+str(eA)+"\n")
 f.write("B;"+str(B)+"\n")
 f.write("eB;"+str(eB)+"\n")
+f.write("P0;"+str(np.mean(P))+"\n")
+f.write("T0;"+str(np.mean(T))+"\n")
+f.write("r0;"+str(g["RatePlat"][0]))
 
 f.close()
 

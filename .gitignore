@@ -5,19 +5,11 @@ photo
 #ingore raw data
 All_data/logs/*
 #ignore intermediate files created by the ScripDownloadAggregate
-GASMON_WorkingDirectory/Script_downloadAggregate/modified
-GASMON_WorkingDirectory/Script_downloadAggregate/withHeader
-GASMON_WorkingDirectory_stepBYstep/Script_downloadAggregate/modified
-GASMON_WorkingDirectory_stepBYstep/Script_downloadAggregate/withHeader
-Percentage_scan_2022/Script_downloadAggregate/modified
-Percentage_scan_2022/Script_downloadAggregate/withHeader
+Script_downloadAggregate/modified
+Script_downloadAggregate/withHeader
 #ignore output ScripDownloadAggregate
-GASMON_WorkingDirectory/Script_downloadAggregate/*.csv
-GASMON_WorkingDirectory/Script_downloadAggregate/*.root
-GASMON_WorkingDirectory_stepBYstep/Script_downloadAggregate/*.csv
-GASMON_WorkingDirectory_stepBYstep/Script_downloadAggregate/*.root
-Percentage_scan_2022/Script_downloadAggregate/*.csv
-Percentage_scan_2022/Script_downloadAggregate/*.root
+Script_downloadAggregate/*.csv
+Script_downloadAggregate/*.root
 #ignore all root an csv TEST
 *.root
 *.csv

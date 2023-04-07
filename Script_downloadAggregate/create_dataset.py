@@ -10,11 +10,16 @@ import ROOT
 import uproot
 from array import array
 import glob
+import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument("-n", "--name", help="set the name of the dataset",default=None)
+args = parser.parse_args()
 
 ##################################################
 ##################################################
 ##################################################
-masked_days_string=["2021-10-31","2021-07-21","2021-07-22","2021-07-23","2021-07-24","2021-07-25","2021-07-26","2021-07-27","2021-07-28","2021-07-29","2021-07-30","2021-09-14","2021-10-21","2021-11-30","2021-11-24", "2022-03-10", "2022-03-27", "2022-02-17", "2022-02-16", "2022-03-11", "2022-03-12", "2022-03-13", "2022-03-14", "2022-03-15", "2022-03-16", "2022-03-17", "2022-03-23", "2022-03-28", "2022-04-13", "2022-04-14", "2022-04-15", "2022-04-16", "2022-04-17", "2022-04-18", "2022-04-19", "2022-04-20", "2021-12-09", "2021-12-10", "2021-12-11", "2021-12-12", "2021-12-13", "2021-12-14", "2021-12-15", "2021-12-16", "2021-12-17", "2021-12-18", "2021-12-19", "2021-12-20", "2021-12-21", "2021-12-22", "2021-12-23", "2021-12-24", "2021-12-25", "2021-12-26", "2021-12-27", "2021-12-28", "2021-12-29", "2021-12-30", "2021-12-31", "2022-01-01", "2022-01-02", "2022-01-03", "2022-01-04", "2022-01-05", "2022-01-06", "2022-01-07", "2022-01-08", "2022-01-09", "2022-01-10", "2022-01-11", "2022-01-12", "2022-01-13", "2022-01-14", "2022-01-15", "2022-01-16", "2022-01-17", "2022-01-18", "2022-01-19", "2022-01-20", "2022-01-21", "2022-01-22", "2022-01-23", "2022-01-24", "2022-01-25", "2022-01-26", "2022-01-27", "2022-01-28", "2022-01-29", "2022-01-30", "2022-01-31", "2022-02-01", "2022-02-02", "2022-02-03", "2022-02-04", "2022-02-05", "2022-02-06", "2022-02-07", "2022-02-08", "2022-02-09", "2022-02-10", "2022-02-11", "2021-11-25", "2021-11-26", "2021-11-27", "2021-11-28", "2021-11-29", "2021-11-30", "2021-12-01", "2021-12-02", "2021-12-03", "2021-12-04", "2021-12-05", "2021-12-06", "2021-12-07", "2021-12-08", "2021-12-09", "2021-10-22", "2021-10-21", "2021-10-23", "2021-10-24", "2021-10-25", "2021-10-26", "2021-10-27", "2021-10-28", "2021-10-29", "2021-10-30", "2021-10-31", "2021-11-01", "2021-11-02", "2021-11-03", "2021-11-04", "2021-11-05", "2021-11-06", "2021-11-07", "2021-11-08", "2021-11-09", "2021-11-10", "2021-11-11", "2021-11-12", "2021-11-13", "2021-11-14", "2021-11-15", "2021-11-16", "2021-11-17", "2021-11-18", "2021-11-19", "2021-11-20", "2021-11-21", "2021-11-22", "2021-11-23", "2021-11-24", "2021-09-21", "2021-09-22", "2021-09-23", "2021-09-24", "2021-09-25", "2021-09-26", "2021-09-27", "2021-09-28", "2021-09-29", "2021-09-30", "2021-10-01", "2021-10-02", "2021-10-03", "2021-10-04", "2021-10-05", "2021-10-06", "2021-10-07", "2021-10-08", "2021-10-09", "2021-10-10", "2021-10-11", "2021-10-12", "2021-10-13", "2021-10-14", "2021-10-15", "2021-10-16", "2021-10-17", "2021-10-18", "2021-10-19", "2021-10-20", "2021-10-21","2022-06-21","2022-07-18","2022-06-19","2021-08-07","2021-08-12","2021-08-13","2021-08-14","2021-08-15","2021-09-13","2021-09-14","2021-09-15","2021-09-16","2021-09-17","2022-03-31","2022-04-01","2022-04-02","2022-04-03","2022-04-04","2022-04-05","2022-04-06","2022-04-07","2022-04-08","2022-04-09","2022-04-10","2022-04-11","2022-04-12","2022-04-13","2022-04-14","2022-04-15","2022-04-16","2022-04-17","2022-04-18","2022-04-19","2022-04-20","2022-04-21","2022-04-22", "2022-08-31","2022-10-29"]
+masked_days_string=["2021-10-31","2021-07-21","2021-07-22","2021-07-23","2021-07-24","2021-07-25","2021-07-26","2021-07-27","2021-07-28","2021-07-29","2021-07-30","2021-09-14","2021-10-21","2021-11-30","2021-11-24", "2022-03-10", "2022-03-27", "2022-02-17", "2022-02-16", "2022-03-11", "2022-03-12", "2022-03-13", "2022-03-14", "2022-03-15", "2022-03-16", "2022-03-17", "2022-03-23", "2022-03-28", "2022-04-13", "2022-04-14", "2022-04-15", "2022-04-16", "2022-04-17", "2022-04-18", "2022-04-19", "2022-04-20", "2021-12-09", "2021-12-10", "2021-12-11", "2021-12-12", "2021-12-13", "2021-12-14", "2021-12-15", "2021-12-16", "2021-12-17", "2021-12-18", "2021-12-19", "2021-12-20", "2021-12-21", "2021-12-22", "2021-12-23", "2021-12-24", "2021-12-25", "2021-12-26", "2021-12-27", "2021-12-28", "2021-12-29", "2021-12-30", "2021-12-31", "2022-01-01", "2022-01-02", "2022-01-03", "2022-01-04", "2022-01-05", "2022-01-06", "2022-01-07", "2022-01-08", "2022-01-09", "2022-01-10", "2022-01-11", "2022-01-12", "2022-01-13", "2022-01-14", "2022-01-15", "2022-01-16", "2022-01-17", "2022-01-18", "2022-01-19", "2022-01-20", "2022-01-21", "2022-01-22", "2022-01-23", "2022-01-24", "2022-01-25", "2022-01-26", "2022-01-27", "2022-01-28", "2022-01-29", "2022-01-30", "2022-01-31", "2022-02-01", "2022-02-02", "2022-02-03", "2022-02-04", "2022-02-05", "2022-02-06", "2022-02-07", "2022-02-08", "2022-02-09", "2022-02-10", "2022-02-11", "2021-11-25", "2021-11-26", "2021-11-27", "2021-11-28", "2021-11-29", "2021-11-30", "2021-12-01", "2021-12-02", "2021-12-03", "2021-12-04", "2021-12-05", "2021-12-06", "2021-12-07", "2021-12-08", "2021-12-09", "2021-10-22", "2021-10-21", "2021-10-23", "2021-10-24", "2021-10-25", "2021-10-26", "2021-10-27", "2021-10-28", "2021-10-29", "2021-10-30", "2021-10-31", "2021-11-01", "2021-11-02", "2021-11-03", "2021-11-04", "2021-11-05", "2021-11-06", "2021-11-07", "2021-11-08", "2021-11-09", "2021-11-10", "2021-11-11", "2021-11-12", "2021-11-13", "2021-11-14", "2021-11-15", "2021-11-16", "2021-11-17", "2021-11-18", "2021-11-19", "2021-11-20", "2021-11-21", "2021-11-22", "2021-11-23", "2021-11-24", "2021-09-21", "2021-09-22", "2021-09-23", "2021-09-24", "2021-09-25", "2021-09-26", "2021-09-27", "2021-09-28", "2021-09-29", "2021-09-30", "2021-10-01", "2021-10-02", "2021-10-03", "2021-10-04", "2021-10-05", "2021-10-06", "2021-10-07", "2021-10-08", "2021-10-09", "2021-10-10", "2021-10-11", "2021-10-12", "2021-10-13", "2021-10-14", "2021-10-15", "2021-10-16", "2021-10-17", "2021-10-18", "2021-10-19", "2021-10-20", "2021-10-21","2022-06-21","2022-07-18","2022-06-19", "2022-08-31","2022-10-29","2023-03-26"]
 ##################################################
 ##################################################
 ##################################################
@@ -23,7 +28,28 @@ max="2021-07-21"
 
 
 #path of the orginal files
-path="../../All_data/logs"
+path="../All_data/logs"
+
+
+def hist(list, x_name, channels=100, linecolor=4, linewidth=4):
+    def fill_h(histo_name, array):
+        for x in range (len(array)):
+            histo_name.Fill((np.array(array[x] ,dtype="d")))
+
+    array=np.array(list ,dtype="d")
+
+    hist=ROOT.TH1D(x_name,x_name,channels,0.99*np.min(array),1.01*np.max(array))
+    fill_h(hist,array)
+    hist.SetLineColor(linecolor)
+    hist.SetLineWidth(linewidth)
+    hist.GetXaxis().SetTitle(x_name)
+    hist.GetYaxis().SetTitle("Entries")
+    hist.Write()
+    hist.SetStats(False)
+    hist.GetYaxis().SetMaxDigits(3);
+    hist.GetXaxis().SetMaxDigits(3);
+    #hist.Write()
+    return hist
 
 def nparr(string):
     return np.array(string, dtype="d")
@@ -43,33 +69,16 @@ def find(pattern, path):
                 result.append(os.path.join(root, name))
     return result
 
-print("#################################################################################################################")
-print("         Chose the Gain measurement to use ")
-print("Copy/Paste one FOLDER name")
-print("#################################################################################################################")
-os.system("ls -lrt ../Gain_FIT")
-print("#################################################################################################################")
-folder=input("Insert only the FOLDER name: ")
-f = open("../Gain_FIT/"+str(folder)+"/fit_parameters.csv", "r")
-print("############################################################")
-print("Gain Fit parameters are:")
-#the input parametrs are declared as variebales as they are neamed in the anal_parameters.csv file
-for x in f:
-    a=x.split(";",1)
-    var=a[0]
-    b=a[1].split("\n",1)
-    val=float(b[0])
-    print("#",var, "=", val)
-    exec(var+"="+str(val))
-f.close()
-
-year=str(folder[4:8])
-month=str(folder[2:4])
-day=str(folder[:2])
-if day=="30":
-    day=="26"
-
-start_date=year+"-"+month+"-"+day+"_12:00:00"
+def graph(x,y,x_string, y_string, color=4, markerstyle=22, markersize=1):
+        plot = ROOT.TGraph(len(x),  np.array(x  ,dtype="d")  ,   np.array(y  ,dtype="d"))
+        plot.SetNameTitle(y_string+" vs "+x_string,y_string+" vs "+x_string)
+        plot.GetXaxis().SetTitle(x_string)
+        plot.GetYaxis().SetTitle(y_string)
+        plot.SetMarkerColor(color)#blue
+        plot.SetMarkerStyle(markerstyle)
+        plot.SetMarkerSize(markersize)
+        plot.Write()
+        return plot
 
 def rate_calc(timestamp):
 #Calculate the hit rate of 55Fe source starting from a r0 measured @ start_date with second precision
@@ -79,7 +88,8 @@ def rate_calc(timestamp):
     def string_to_date(string):
         return datetime.datetime.strptime(string, '%Y-%m-%d_%H:%M:%S')
 
-    #OLD start_date='2021-07-26_12:00:00'
+    start_date='2021-07-26_12:00:00'
+    r0=3592.320833
     #r0=300
     tau=1.255E8#seconds
 
@@ -106,7 +116,6 @@ def to_ROOT_arr(list):
         x.append( int( dat.Convert() ) )
     return x
 
-
 n0=200
 e=1.6E-19
 print("###########################################################################################")
@@ -128,7 +137,7 @@ print("#########################################################################
 print("If you want to mask some days you need to insert them at the very beginning of this code")
 start_string = input("PLS provide START string 'yyyy-mm-dd' write 'max' for taking the oldest: ")
 if start_string=="max":
-    start_string=max
+    start_string="2022-05-05"
 else:
     start_string = str(start_string)
 end_string = (input("PLS provide STOP string 'yyyy-mm-dd' write 'max' for taking the newest: "))
@@ -151,6 +160,13 @@ masked_days=[ s_to_d(x) for x in masked_days_string]
 #convert the start and stop string to the start and stop datetime
 start = datetime.datetime.strptime(start_string, '%Y-%m-%d')
 end = datetime.datetime.strptime(end_string, '%Y-%m-%d')
+
+const_start=datetime.datetime.strptime('2022-05-05', '%Y-%m-%d')
+if start<const_start:
+    print("############################################")
+    print("Start time should be after the 04/05/2022")
+    print("############################################")
+    sys.exit()
 
 print("Start date is:",start)
 print("End date is:", end)
@@ -205,7 +221,7 @@ for j in range(files_num):
 
     with open("./withHeader/"+str(date_list[j].strftime("%Y-%m-%d"))+".txt",'w') as outfile:
         #outfile.write("Timestamp,Error Code,Error String,Mean Current,Mean Error,T,P,H,syncro err flag,syncro time,Vset,Vmon,Imon,Status flag,Power,Error Message\n")
-        outfile.write("Timestamp,Error Code,Error String,Mean Current,Mean Error,T,P,H,valve,flow set,flow read,syncro err flag,syncro time,Vset,Vmon,Imon,Status flag,Power,Error Message\n")
+        outfile.write("Timestamp,Error Code,Error String,Mean Current,Mean Error,T,P,H,valve,flow set,flow read,syncro err flag,syncro time,Vset,Vmon,Imon,Status flag,Power,Error Message,Gain Measured,Gain Corrected,CO2,Gain mean,Gain err,t value,t flag\n")
         for index,line in enumerate(infile):
             outfile.write(line)
 
@@ -216,14 +232,16 @@ for w in range(files_num):
 #print(len(mod))
 
 #columns set on the modified data
-col=["Timestamp", "Error Code", "Error String", "Mean Current", "Mean Error", "T", "P", "H","valve","flow set","flow read", "syncro err flag", "syncro time", "Vset", "Vmon", "Imon", "Status flag", "Power", "Error Message" ]
+col=["Timestamp", "Error Code", "Error String", "Mean Current", "Mean Error", "T", "P", "H","valve","flow set","flow read", "syncro err flag", "syncro time", "Vset", "Vmon", "Imon", "Status flag", "Power", "Error Message","Gain Measured", "Gain Corrected", "CO2", "Gain mean","Gain err", "t value", "t flag" ]
 #col=["Timestamp", "Error Code",	"Error String",	"Mean Current",	"Mean Error", "T", "P",	"H", "syncro err flag",	"syncro time", "Vset", "Vmon", "Imon", "Status flag", "Power", "Error Message"]
 
 #list of dataframes, every item is a daframe of one file
 df=[]
 for f in range(files_num):
     temp= pd.read_csv(head[f][0], delimiter=",", usecols=col)
-    #print(temp)
+    #print(head[f][0])
+    #temp= pd.read_csv(head[f][0], delimiter=",")
+    #print(temp.columns)
     df.append(temp)
 
 
@@ -261,7 +279,7 @@ for w in range(files_num):
 #print(len(mod))
 
 #columns set on the modified data
-col=["Timestamp", "Error Code", "Error String", "Mean Current", "Mean Error", "T", "P", "H","valve","flow set","flow read", "syncro err flag", "syncro time", "Vset", "Vmon", "Imon", "Status flag", "Power", "Error Message" ]
+col=["Timestamp", "Error Code", "Error String", "Mean Current", "Mean Error", "T", "P", "H","valve","flow set","flow read", "syncro err flag", "syncro time", "Vset", "Vmon", "Imon", "Status flag", "Power", "Error Message","Gain Measured", "Gain Corrected", "CO2", "Gain mean","Gain err", "t value", "t flag" ]
 
 #list of dataframes, every item is a daframe of one file
 df=[]
@@ -283,7 +301,7 @@ print("#########################################################################
 
 #5)
 #points=np.array([x for x in range(len(result["Mean Current"]))],dtype="d"  )
-
+"""
 timestamps=result["Timestamp"].tolist()
 rate=rate_calc(timestamps)
 erate=np.sqrt(rate*60)/60
@@ -297,10 +315,11 @@ result.insert(6, "err Rate", erate, True)
 result.insert(7, "Gain", gain, True)
 result.insert(8, "err gain", egain, True)
 
-
+"""
 
 #write dataframe
-result.to_csv("Dataset_"+start_string+"_"+end_string+".csv", sep=';', header=True, index=False, mode='w')
+if args.name is None: result.to_csv("Dataset_"+start_string+"_"+end_string+".csv", sep=';', header=True, index=False, mode='w')
+else: result.to_csv(args.name+".csv", sep=';', header=True, index=False, mode='w')
 
 
 
@@ -309,9 +328,10 @@ print("#########################################################################
 
 ###################################################################################################################################################################
 
-
-main=ROOT.TFile("Dataset_"+start_string+"_"+end_string+".root","RECREATE")#root file creation
-
+if args.name is None: main=ROOT.TFile("Dataset_"+start_string+"_"+end_string+".root","RECREATE")#root file creation
+else: main=ROOT.TFile(args.name+".root","RECREATE")#root file creation
+main.mkdir("variables_time")
+main.cd("variables_time")
 
 col=result.columns.tolist()
 
@@ -324,7 +344,7 @@ col.remove("Error Message")
 
 ics=np.arange(0.,len(result[col[0]]), 1.)
 
-plot = ROOT.TGraph(len(result["Gain"]),  time  ,   ics )
+plot = ROOT.TGraph(len(result["Timestamp"]),  time  ,   ics )
 plot.GetXaxis().SetTimeDisplay(1);
 plot.GetXaxis().SetTimeOffset(0);
 plot.GetXaxis().SetNdivisions(5005);
@@ -354,16 +374,22 @@ for i in range(len(col)):
     plot.SetMarkerSize(1)
     plot.Write()
 
+
+
+graph(result["T"], result["Gain Corrected"],"Temperature", "Gain")
+graph(result["P"], result["Gain Corrected"],"Pressure", "Gain")
+
+graph(result["T"], result["t value"],"Temperature", "t value")
+graph(result["P"], result["t value"],"Pressure", "t value")
+
+main.mkdir("distributions")
+main.cd("distributions")
+for i in range(len(col)):
+
+    hist(result[col[i]], col[i])
+
 print("Step 5 OK")
 print("###########################################################################################")
-
-
-
-
-
-
-
-
 
 
 
