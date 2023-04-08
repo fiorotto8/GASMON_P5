@@ -9,7 +9,11 @@ import uproot
 import sys
 import os
 from array import array
+import argparse
 
+parser = argparse.ArgumentParser()
+parser.add_argument("-n", "--name", help="set the name of the dataset",default=None)
+args = parser.parse_args()
 
 
 def plot_plot(marker,color,x,y,e_x,e_y,title_x, title_y):
@@ -117,7 +121,7 @@ def fill_h(histo_name, array):
 
 
 
-f = open("anal_parameters.csv", "r")
+f = open("anal_parameters.txt", "r")
 print("############################################################")
 print("Input parameters are:")
 #the input parametrs are declared as variebales as they are neamed in the anal_parameters.csv file
@@ -134,12 +138,12 @@ print("#########################################################################
 print("         Chose the Gain measurement to use ")
 print("Copy/Paste one FOLDER name")
 print("#################################################################################################################")
-os.system("ls -lrt ../Gain_FIT")
+os.system("ls -lrt ../../Gain_FIT")
 print("#################################################################################################################")
 folder=input("Insert only the FOLDER name: ")
 #folder="30072021"
 
-f = open("../Gain_FIT/"+str(folder)+"/fit_parameters.csv", "r")
+f = open("../../Gain_FIT/"+str(folder)+"/fit_parameters.txt", "r")
 print("############################################################")
 print("Gain Fit parameters are:")
 #the input parametrs are declared as variebales as they are neamed in the anal_parameters.csv file
@@ -157,12 +161,12 @@ print("#########################################################################
 print("         Chose the dataset to analyze ")
 print("Copy/Paste one name from the following list, if it is not present you should generate the dataset")
 print("#################################################################################################################")
-os.system("ls -lrt ../Script_downloadAggregate/*.csv")
+os.system("ls -lrt ../../Script_downloadAggregate/*.txt")
 print("#################################################################################################################")
 input=input("Insert only the datset name: ")
 #input="Baseline"
 
-df=pd.read_csv("../Script_downloadAggregate/"+str(input)+".csv", delimiter=";")
+df=pd.read_csv("../../Script_downloadAggregate/"+str(input)+".csv", delimiter=";")
 
 print("#################################################################################################################")
 print("CSV file columns: ")
@@ -171,6 +175,34 @@ print(col)
 print("#################################################################################################################")
 
 main=ROOT.TFile("root_"+str(input)+".root","RECREATE")
+
+#compute from scratch rate, gain and error
+def rate_calc(timestamp,r0,start):
+#Calculate the hit rate of 55Fe source starting from a r0 measured @ start_date with second precision
+#wite the date in %Y-%m-%d_%H:%M:%S format
+#decay time is 1452.36 days or 12.55E9 seconds
+#NB -> timestamp has to be a list also if it is one-sized
+    def string_to_date(string):
+        return datetime.datetime.strptime(string, '%Y-%m-%d_%H:%M:%S')
+
+    start_date=start+'_12:00:00'
+
+    #r0=300
+    tau=1.255E8#seconds
+
+    rate=np.empty(len(timestamp))
+
+    for i in range(len(timestamp)):
+        dt=(string_to_date(timestamp[i])-string_to_date(start_date)).total_seconds()
+        rate[i]=r0*m.exp(-dt/tau)
+
+    return rate
+
+rate=rate_calc(df["Timestamp"],r0,folder)
+print(rate)
+gain=-1*nparr(df["Mean Current"])/(200*1.6E-19*rate)
+err_gain=nparr(df["Mean Error"])/(200*1.6E-19*rate)
+
 
 V=np.mean(nparr(df["Vmon"]))
 print("V=",V)
@@ -197,15 +229,15 @@ main.mkdir("Gain vs other variables")
 main.cd("Gain vs other variables")
 
 for i in (9,10,11,12,13,14,17,18,19,20, 21):
-    grapherr(df[col[i]], df["Gain"], etime_all, df["err gain"],   col[i], "Gain" )
+    grapherr(df[col[i]], gain, etime_all, err_gain,   col[i], "Gain" )
 #bonus
-grapherr(df["T"]/df["P"],df["Gain"], etime_all, df["err gain"], "T/P", "Gain" )
+grapherr(df["T"]/df["P"],gain, etime_all, err_gain, "T/P", "Gain" )
 ############################################################################################
 
 ############################################################################################
 #graph of the gain vs T and P
 main.cd()
-gtp=ROOT.TGraph2D(len(df["T"]), nparr(df["T"]),nparr(df["P"]), nparr(df["Gain"]));
+gtp=ROOT.TGraph2D(len(df["T"]), nparr(df["T"]),nparr(df["P"]), nparr(gain));
 gtp.GetXaxis().SetTitle("Temperature")
 gtp.GetYaxis().SetTitle("Pressure")
 gtp.GetXaxis().SetTitle("Gain")
@@ -215,10 +247,6 @@ gtp.Write()
 
 pi=nparr(df["P"])
 ti=nparr(df["T"])
-
-
-gain=nparr(df["Gain"])
-err_gain=nparr(df["err gain"])
 
 time=[x for x in range(len(gain))]
 err_time=[0.001 for x in range(len(gain))]
@@ -427,7 +455,7 @@ cv.SaveAs("output_plots/GainTime"+str(input)+".pdf");
 #ROOT.gApplication.Run()
 
 ################################################################################################
-hist_nocorr=hist(df["Gain"], "Gain before correction", 1000, 4)
+hist_nocorr=hist(gain, "Gain before correction", 1000, 4)
 hist_corr=hist(corr_gain, "Gain after correction", 1000, 2)
 
 

@@ -76,7 +76,7 @@ def canvas(plot, size=800, leftmargin=0.1, rightmargin=0.2):
     can1.SaveAs(y_name+" vs "+x_name+".png")
     return can1
 
-f = open("anal_parameters.csv", "r")
+f = open("anal_parameters.txt", "r")
 print("############################################################")
 print("Input parameters are:")
 #the input parametrs are declared as variebales as they are neamed in the anal_parameters.csv file
