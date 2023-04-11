@@ -5,6 +5,14 @@ import statistics as stat
 import math as m
 import datetime
 import os
+import argparse
+
+ROOT.gROOT.SetBatch(True)
+
+parser = argparse.ArgumentParser()
+parser.add_argument("-d", "--delay", help="set delay in points (1 point=30s) from the set date of the percentage and where start to take good data",default=120)
+parser.add_argument("-m", "--method", help="Set the correction metod: m or f",default=None)
+args = parser.parse_args()
 
 main=ROOT.TFile("analysis_percentage.root","RECREATE")#root file creation
 
@@ -14,7 +22,7 @@ Exponential.SetParNames("Constant","Slope")
 Exponential.SetParameters(15.53,-0.1883)
 
 #delay in points (1 point = 1/2 minute = 30 sec)
-delay=120
+delay=int(args.delay)
 #fixed flux of gas
 flux=3
 
@@ -51,26 +59,6 @@ def c_error(c_perc):
 
     return c_perc*m.sqrt( (dphi_T/flux)**2 + (dphi_c/phi_c)**2 )
 
-def rate_calc(timestamp):
-#Calculate the hit rate of 55Fe source starting from a r0 measured @ start_date with second precision
-#wite the date in %Y-%m-%d_%H:%M:%S format
-#decay time is 1452.36 days or 12.55E9 seconds
-#NB -> timestamp has to be a list also if it is one-sized
-    def string_to_date(string):
-        return datetime.datetime.strptime(string, '%Y-%m-%d_%H:%M:%S')
-
-    start_date='2021-01-07_12:00:00'
-    r0=377
-    tau=12.55E9#seconds
-
-    rate=np.empty(len(timestamp))
-
-    for i in range(len(timestamp)):
-        dt=(string_to_date(timestamp[i])-string_to_date(start_date)).total_seconds()
-        rate[i]=r0*m.exp(-dt/tau)
-
-    return rate
-
 def nparr(list):
     return np.array(list, dtype="d")
 
@@ -79,6 +67,52 @@ def fill_h(histo_name, array):
     for x in range (len(array)):
         histo_name.Fill((np.array(array[x] ,dtype="d")))
 
+
+
+
+
+print("#################################################################################################################")
+print("         Chose the Gain measurement to use ")
+print("Copy/Paste one FOLDER name")
+print("#################################################################################################################")
+os.system("ls -lrt ../../Gain_FIT")
+print("#################################################################################################################")
+folder=input("Insert only the FOLDER name: ")
+
+
+f = open("../../Gain_FIT/"+str(folder)+"/fit_parameters.txt", "r")
+print("############################################################")
+print("Gain Fit parameters are:")
+#the input parametrs are declared as variebales as they are neamed in the anal_parameters.csv file
+for x in f:
+    a=x.split(";",1)
+    var=a[0]
+    b=a[1].split("\n",1)
+    val=float(b[0])
+    print("#",var, "=", val)
+    exec(var+"="+str(val))
+f.close()
+
+def rate_calc(timestamp,r0,start):
+#Calculate the hit rate of 55Fe source starting from a r0 measured @ start_date with second precision
+#wite the date in %Y-%m-%d_%H:%M:%S format
+#decay time is 1452.36 days or 12.55E9 seconds
+#NB -> timestamp has to be a list also if it is one-sized
+    def string_to_date(string):
+        return datetime.datetime.strptime(string, '%Y-%m-%d_%H:%M:%S')
+
+    start_date=start+'_12:00:00'
+
+    #r0=300
+    tau=1.255E8#seconds
+
+    rate=np.empty(len(timestamp))
+
+    for i in range(len(timestamp)):
+        dt=(string_to_date(timestamp[i])-string_to_date(start_date)).total_seconds()
+        rate[i]=r0*m.exp(-dt/tau)
+
+    return rate
 #
 #
 #
@@ -96,55 +130,81 @@ def fill_h(histo_name, array):
 #
 #
 #check if folder exist, if not create it
-if not os.path.isdir("output_plots"):
-    os.makedirs("output_plots")
+if not os.path.isdir("output_files"):
+    os.makedirs("output_files")
 
 #1)
-#import dataset
-#dataset_string="/mnt/d/CernBOX/Ph.D/Monitoring/Percentage-variation/Script_downloadAggregate/AllData-concatenated-NoBadLines.csv"
-dataset_string="./Script_downloadAggregate/Dataset_2022-11-29_2022-12-05.csv"
-dataset_col=col=["Timestamp",	"Error Code",	"Error String",	"Mean Current",	"Mean Error",	"Rate",	"err Rate",	"Gain",	"err gain",	"T",	"P",	"H",	"valve",	"flow set",	"flow read",	"syncro err flag",	"syncro time",	"Vset",	"Vmon",	"Imon",	"Status flag",	"Power",	"Error Message"]
-dataset =  pd.read_csv(  dataset_string  ,   usecols=dataset_col ,  delimiter=";"  )
+print("#################################################################################################################")
+print("         Chose the dataset to analyze ")
+print("Copy/Paste one name from the following list, if it is not present you should generate the dataset")
+print("#################################################################################################################")
+os.system("ls -lrt ../../Script_downloadAggregate/*.csv")
+print("#################################################################################################################")
+inputdf=input("Insert only the datset name: ")
+
+dataset=pd.read_csv("../../Script_downloadAggregate/"+str(inputdf)+".csv", delimiter=";")
+
+rate=rate_calc(dataset["Timestamp"],r0,folder)
+print(rate)
+gain=-1*nparr(dataset["Mean Current"])/(200*1.6E-19*rate)
+err_gain=nparr(dataset["Mean Error"])/(200*1.6E-19*rate)
+
+V=np.mean(nparr(dataset["Vmon"]))
+G0=A*m.exp(B*V)
+print("V=",V,"G0=",G0)
 
 #import timing and percentages
-#timing_string="/mnt/d/CernBOX/Ph.D/Monitoring/Percentage-variation/GainVSPercentage/timing_percentage.csv"
-timing_string="./timing_percentage.csv"
+timing_string="./timing_percentage.txt"
 timing_col=["Change Time",	"CO2 Percentage"]
 timing =  pd.read_csv(  timing_string  ,   usecols=timing_col ,  delimiter=";"  )
 
 #import correction parameters
-#correction_string="/mnt/d/CernBOX/Ph.D/Monitoring/Percentage-variation/GainVSPercentage/results.csv"
+if args.method is None:
+    print("Use Minizer or Fit results??")
+    method=input("m/f?")
+else: method=args.method
+
+if method=="f":
+    print("#################################################################################################################")
+    print("         Choose the analysis results to use ")
+    print("Copy/Paste one name from the following list, if it is not present you should generate the correction")
+    print("IF YOU ARE SURE THE CORRETION HAS BEEN CREATED WITH THE SAME NAME AS THE ORIGNAL DATASETAND NO OTHER STRANGE NAMES HAS BEEN USED TYPE : same")
+    print("#################################################################################################################")
+    os.system("ls -lrt ../../StepAnalysis/TP_Fit/*.csv")
+    print("#################################################################################################################")
+    correction_par=input("Insert only the datset name: ")
+    f = open("../../StepAnalysis/TP_Fit/"+correction_par+".csv", "r")
+elif method=="m":
+    print("#################################################################################################################")
+    print("         Choose the analysis results to use ")
+    print("Copy/Paste one name from the following list, if it is not present you should generate the correction")
+    print("IF YOU ARE SURE THE CORRETION HAS BEEN CREATED WITH THE SAME NAME AS THE ORIGNAL DATASETAND NO OTHER STRANGE NAMES HAS BEEN USED TYPE : same")
+    print("#################################################################################################################")
+    os.system("ls -lrt ../../StepAnalysis/MiniminzingVariance/*.csv")
+    print("#################################################################################################################")
+    correction_par=input("Insert only the datset name: ")
+    f = open("../../StepAnalysis/MiniminzingVariance/"+correction_par+".csv", "r")
+else: print("You inserted the wrong letter my friend ;)")
+
+print("############################################################")
+print("TP parameters are:")
+#the input parametrs are declared as variebales as they are neamed in the anal_parameters.csv file
+for x in f:
+    k=x.split(";",1)
+    var=k[0]
+    j=k[1].split("\n",1)
+    val=float(j[0])
+    print("#",var, "=", val)
+    exec(var+"="+str(val))
+f.close()
+
+"""
 correction_string="./results_output.csv"
 correction_col=["a @ min","err a",   "b @ min","err b" ,"A", "B"]
 correction =  pd.read_csv(  correction_string  ,   usecols=correction_col ,  delimiter=";"  )
-
-#import zero parameters
-#parameter_string="/mnt/d/CernBOX/Ph.D/Monitoring/Percentage-variation/GainVSPercentage/parameters.csv"
-parameter_string="./parameters.csv"
-parameter_col=[ "n0",	"G0",	"P0",	"T0"]
-parameter =  pd.read_csv(  parameter_string  ,   usecols=parameter_col ,  delimiter=";"  )
+"""
 
 points=np.array([x for x in range(len(dataset["Mean Current"]))],dtype="d"  )
-
-n0=parameter["n0"][0]
-e=1.6E-19
-G0=parameter["G0"][0]
-P0=parameter["P0"][0]
-T0=parameter["T0"][0]
-V=np.mean(nparr(dataset["Vset"]))
-
-print(P0, T0)
-
-a=correction["a @ min"][0]
-err_a=correction["err a"][0]
-b=correction["b @ min"][0]
-err_b=correction["err b"][0]
-
-A=correction["A"][0]
-B=correction["B"][0]
-
-#print(a, e_a)
-#print(b, e_b)
 
 
 #2)
@@ -171,14 +231,14 @@ def correction(G,err_G,t,p):
     X=(P0/p)**(-a)
     Y=(t/T0)**(-b)
 
-    error=   (A**(1-X*Y)) * (G**(X*Y)) * X * Y * np.sqrt( np.square(err_G/G) +      np.square( err_a*np.log(P0/p)*(np.log(A)-np.log(G)) ) + np.square( (np.log(A)-np.log(G))*err_b*np.log(t/T0) )     )
+    error=   (A**(1-X*Y)) * (G**(X*Y)) * X * Y * np.sqrt( np.square(err_G/G) +      np.square( e_a*np.log(P0/p)*(np.log(A)-np.log(G)) ) + np.square( (np.log(A)-np.log(G))*e_b*np.log(t/T0) )     )
 
     return np.array([corr,error], dtype="d")
 
 #2.1)
 #you can test the output
 #print(correction(dataset["Mean Current"],dataset["Mean Error"], dataset["T"], dataset["P"]))
-corr_gain_w_err=correction(dataset["Gain"],dataset["err gain"], dataset["T"], dataset["P"])
+corr_gain_w_err=correction(gain,err_gain, dataset["T"], dataset["P"])
 
 #create DataFrame
 corr_gain=pd.DataFrame( { "Timestamp":dataset["Timestamp"], "gain corr": corr_gain_w_err[0], "err gain corr": corr_gain_w_err[1]   } )
@@ -207,7 +267,7 @@ c_scatter.SetFixedAspectRatio();
 
 mg=ROOT.TMultiGraph()
 
-plotB = ROOT.TGraphErrors(len(time),  time, nparr(dataset["Gain"]), err_time, nparr(dataset["err gain"])      )
+plotB = ROOT.TGraphErrors(len(time),  time, nparr(gain), err_time, nparr(err_gain)      )
 plotB.SetMarkerColor(4)#blue
 plotB.SetMarkerStyle(22)
 plotB.SetMarkerSize(1)
@@ -249,8 +309,8 @@ c_histo.SetFrameBorderMode(0);
 c_histo.SetFrameBorderMode(0);
 c_histo.SetFixedAspectRatio();
 ch=100
-min=np.min([0.99*np.min(corr_gain_w_err[0]), 0.99*np.min(nparr(dataset["Gain"]))])
-max=np.max([1.01*np.max(corr_gain_w_err[0]), 1.01*np.max(nparr(dataset["Gain"]))])
+min=np.min([0.99*np.min(corr_gain_w_err[0]), 0.99*np.min(nparr(gain))])
+max=np.max([1.01*np.max(corr_gain_w_err[0]), 1.01*np.max(nparr(gain))])
 
 
 
@@ -264,7 +324,7 @@ histoA.Draw()
 
 #temp=-1*np.array(dataset["Mean Current"],dtype="d")/(n0*e*rate)
 histoB= ROOT.TH1D(""," ;Effective Gas Gain; Entries", ch*10, min, max)
-fill_h(histoB, nparr(dataset["Gain"]))
+fill_h(histoB, nparr(gain))
 histoB.SetLineColor(4)
 histoB.Draw("SAME")
 
