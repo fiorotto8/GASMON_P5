@@ -69,19 +69,19 @@ The code asks you to select the name of the dataset generated that you want to f
 This code works similarly to the TP_Fit one. It has the same `anal_parameters.txt` file, but it works differently. It doesn't use the correction model and fit the data but it applies the correction for a set of randomly generated *a* and *b* and it chose the pair that minimizes the variance of the final dataset. For this reason, this procedure is less dependent on the calibration (depends only on *A* and not on *B*) and form experience works slightly better than the fit.
 **The correction plot you can find in the `.root` file is just to have a visual check about the correction made by the selected parameter, real correction for the next analysis step has to be done inside the `TP_correction` folder**
 
-### 3.2 TP_correction folder
+## 3.2 TP_correction folder
 The correction is already made by the parameter finding codes TP_Fit and MinimingVariance. Here we generate the corrected dataset to be used in further analysis. Also in this case you can give a name to the dataset. Moreover, you can skip the method selected during code running by passing 'm' of 'f' as an argument using `-m`
 For this piece of code you cannot set a name because the name of the output file will keep track of the corrected dataset and the dataset used to correct
 
-### 3.3 Performance_Simualtion folder
+## 3.3 Performance_Simualtion folder
 Here one dataset from the TP_correctin folder is used to measure the performance of the deviation algorithm. To test the performance you need a 'good' dataset. What the code does is artificially increase the points of the dataset by summing a straight line to the real points. It outputs some check plots in the `.root` file, the main output is the Algorithm resolution as a function of the threshold imposed.
 
-### 3.4 tvalues folder
+## 3.4 tvalues folder
 In this folder, you can generate the t_values trend and distribution by selecting a reference dataset and a dataset to test on it
 
-### 3.5 FakeWarning_Probability
+## 3.5 FakeWarning_Probability
 
 Starting for a corrected dataset, usually in this case you usually use a good reference one. The script executes a scan of threshold values and check the probability of having a warning on a given dataset
 
-## 4 Percentage Scan
+# 4 Percentage Scan
 Usually before the end-of-year technical stop, we perform a scan of the CO2 percentage from the mixer to check if the calibration to pass from gain to CO2 is still the same. Usually, the scans are made from 35% to 25% of CO2 in a step of 5%. Copying the existing folder (2022 is there) and renaming it for the next calibration is enough. You should generate the dataset from the ususal `Script_downloadAggregate/create_dataset.py` script just in the interesting period. During the test pay attention to taking note of the change in percentage and write them down in the `timing_percentage.txt` in the same format as the old files. The code `percentage_analysis` requires some inputs to work such as the gain calibration, the dataset to use (the one you generated) and the T, P correction you want to use.
