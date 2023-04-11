@@ -14,6 +14,9 @@ import os
 from scipy import stats
 import argparse
 
+if not os.path.exists("output_files"):
+    os.makedirs("output_files")
+
 ROOT.gROOT.SetBatch(True)
 
 parser = argparse.ArgumentParser()

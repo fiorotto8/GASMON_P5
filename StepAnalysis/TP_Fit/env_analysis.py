@@ -13,6 +13,10 @@ import argparse
 
 ROOT.gROOT.SetBatch(True)
 
+
+if not os.path.exists("output_plots"):
+    os.makedirs("output_plots")
+
 parser = argparse.ArgumentParser()
 parser.add_argument("-n", "--name", help="set the name of the dataset",default=None)
 args = parser.parse_args()

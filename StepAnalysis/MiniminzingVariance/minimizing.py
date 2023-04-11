@@ -11,6 +11,10 @@ import os
 from array import array
 import argparse
 
+if not os.path.exists("output_plots"):
+    os.makedirs("output_plots")
+
+
 ROOT.gROOT.SetBatch(True)
 
 parser = argparse.ArgumentParser()

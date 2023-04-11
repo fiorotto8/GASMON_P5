@@ -12,6 +12,12 @@ from array import array
 import glob
 import argparse
 
+if not os.path.exists("modified"):
+    os.makedirs("modified")
+if not os.path.exists("withHeader"):
+    os.makedirs("withHeader")
+
+
 ROOT.gROOT.SetBatch(True)
 
 parser = argparse.ArgumentParser()

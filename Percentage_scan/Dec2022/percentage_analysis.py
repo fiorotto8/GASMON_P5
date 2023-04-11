@@ -9,6 +9,9 @@ import argparse
 
 ROOT.gROOT.SetBatch(True)
 
+if not os.path.exists("output_files"):
+    os.makedirs("output_files")
+
 parser = argparse.ArgumentParser()
 parser.add_argument("-d", "--delay", help="set delay in points (1 point=30s) from the set date of the percentage and where start to take good data",default=120)
 parser.add_argument("-m", "--method", help="Set the correction metod: m or f",default=None)

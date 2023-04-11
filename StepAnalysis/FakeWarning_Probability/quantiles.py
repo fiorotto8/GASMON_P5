@@ -15,6 +15,9 @@ from scipy import stats
 
 ROOT.gROOT.SetBatch(True)
 
+if not os.path.exists("output_plots"):
+    os.makedirs("output_plots")
+
 def nparr(string):
     return np.array(string, dtype="d")
 
