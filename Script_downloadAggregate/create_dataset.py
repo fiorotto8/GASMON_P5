@@ -12,6 +12,8 @@ from array import array
 import glob
 import argparse
 
+ROOT.gROOT.SetBatch(True)
+
 parser = argparse.ArgumentParser()
 parser.add_argument("-n", "--name", help="set the name of the dataset",default=None)
 args = parser.parse_args()

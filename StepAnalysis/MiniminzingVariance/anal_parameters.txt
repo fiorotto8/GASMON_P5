@@ -1,4 +1,4 @@
-points;5000
+points;1000
 a_min;0.3
 a_max;0.5
 b_min;0.4

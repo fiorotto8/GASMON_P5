@@ -7,9 +7,8 @@ All_data/logs/*
 #ignore intermediate files created by the ScripDownloadAggregate
 Script_downloadAggregate/modified
 Script_downloadAggregate/withHeader
-#ignore output ScripDownloadAggregate
-Script_downloadAggregate/*.csv
-Script_downloadAggregate/*.root
+Percentage_Scan/Dec2022/Script_downloadAggregate/modified
+Percentage_Scan/Dec2022/Script_downloadAggregate/withHeader
 #ignore all root an csv TEST
 *.root
 *.csv

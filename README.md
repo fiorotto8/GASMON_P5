@@ -1,10 +1,11 @@
+**More info about the full repository and the purpose may be found here:**
+[3<sup>rd</sup> chapter of Davide's PhD Thesis](https://cds.cern.ch/record/2803932?ln=en)
 # -1 General notes
-
 ### The early version of such code has been written during my first tries with Python and it received multiple patches. It's ugly but it works! Any suggestion of modification is more than welcome!!!
 
 ### The `LOG_p5.txt` file contains the date of the important things that happened on the gas system regarding the GASMON system.
 
-### In general, the `.txt`iles are synchronized and are required for the good behavior of the infrastructure, while the `.csv`files are related to the dataset so, in general, are not synchronized.
+### In general, the `.txt` files are synchronized and are required for the good behavior of the infrastructure, while the `.csv`files are related to the dataset so, in general, are not synchronized.
 # 0 Setting up the environment
 
 ## Install requirements
@@ -38,7 +39,8 @@ For any kind of the following analysis, you should generate a dataset that spans
 When running, the script will ask you for the start date and the stop date. you can write `max` on the start to use the oldest file and `max` on the stop date to use the today value.
 The default dataset name is composed of the dates, using `-n` as an argument you can set a dedicated name for the dataset.
 **Remember that all the data contained in the generated dataset are the ones from the GasMon machine. The correction and the manipulation made locally by the GasMon system may be different from what you want**
-
+**For monitoring purposes of the _beahvious of GASMON system the_ output `.root` is very useful*
+**
 # 2 Calibration Data
 For most of the analysis you have to do here you need calibration data. In particular, the measurement of the initial gain, rate and temperature and pressure. Such measurements are usually contained in a specific directory with the date. The calibration is required to have a good correction parameter estimation. In particular to have a good measurement of the parameters *A* and *B*.
 Every folder contains a `qc5.py` script that takes in input the `.csv` file with the data measured that particular calibration day. the script output the `fit_parameters.txt` file that is used by other codes
@@ -58,7 +60,7 @@ b_min;<min of the b range>
 b_max;<max of the b range>
 err_step;<step in the a and b directions for tha algorithm that look for the error>
 ```
-**Pay attention to the number of points, you can go out of memory easily, 1000 is a good number if the range is not so large**
+**Pay attention to the number of points, you can go out of memory easily, 1000 is a good number, if the range is not so large**
 The code asks you to select the name of the dataset generated that you want to fit. Also in this case you can specify with the `-n` argument the name of the output files. The latter is a .root file with the graph, a .csv with the results in tabular form and a .pdf and a .png with the chi2 plot in the a,b plane.
 **The correction plot you can find in the `.root` file is just to have a visual check about the correction made by the selected parameter, real correction for the next analysis step has to be done inside the `TP_correction` folder**
 ### 3.1.2 MinimizingVariance folder
@@ -68,3 +70,15 @@ This code works similarly to the TP_Fit one. It has the same `anal_parameters.tx
 ### 3.2 TP_correction folder
 The correction is already made by the parameter finding codes TP_Fit and MinimingVariance. Here we generate the corrected dataset to be used in further analysis. Also in this case you can give a name to the dataset. Moreover, you can skip the method selected during code running by passing 'm' of 'f' as an argument using `-m`
 For this piece of code you cannot set a name because the name of the output file will keep track of the corrected dataset and the dataset used to correct
+
+### 3.3 Performance_Simualtion folder
+Here one dataset from the TP_correctin folder is used to measure the performance of the deviation algorithm. To test the performance you need a 'good' dataset. What the code does is artificially increase the points of the dataset by summing a straight line to the real points. It outputs some check plots in the `.root` file, the main output is the Algorithm resolution as a function of the threshold imposed.
+
+### 3.4 tvalues folder
+In this folder, you can generate the t_values trend and distribution by selecting a reference dataset and a dataset to test on it
+
+### 3.5 FakeWarning_Probability
+
+Starting for a corrected dataset, usually in this case you usually use a good reference one. The script execute a scan of threshold values and check the probability of having a warning on a given dataset
+
+## 4 Percentage Scan

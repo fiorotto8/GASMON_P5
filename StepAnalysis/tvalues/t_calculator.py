@@ -11,7 +11,8 @@ import awkward
 import uproot
 import math as m
 import os
-from scipy import stats
+
+ROOT.gROOT.SetBatch(True)
 
 def nparr(string):
     return np.array(string, dtype="d")
@@ -30,11 +31,6 @@ def to_ROOT_arr(list):
         dat=ROOT.TDatime(year, month, day, hour, minute, second)
         x.append( int( dat.Convert() ) )
     return x
-
-#define filling histogram function
-def fill_h(histo_name, array):
-    for x in range (len(array)):
-        histo_name.Fill((np.array(array[x] ,dtype="d")))
 
 def grapherr(x,y,ex,ey,x_string, y_string, color=4, markerstyle=22, markersize=1):
         plot = ROOT.TGraphErrors(len(x),  np.array(x  ,dtype="d")  ,   np.array(y  ,dtype="d") , np.array(   ex   ,dtype="d"),np.array( ey   ,dtype="d"))
@@ -76,7 +72,7 @@ def canvas(plot, size=800, leftmargin=0.1, rightmargin=0.2):
     plot.Draw("ALP")
 
     can1.Write()
-    can1.SaveAs(y_name+" vs "+x_name+".png")
+    #can1.SaveAs(y_name+" vs "+x_name+".png")
     return can1
 
 def hist(list, x_name, channels=100, linecolor=4, linewidth=4):
@@ -86,11 +82,11 @@ def hist(list, x_name, channels=100, linecolor=4, linewidth=4):
 
     array=np.array(list ,dtype="d")
 
-    hist=ROOT.TH1D(x_name,x_name,channels,0.99*np.min(array),1.01*np.max(array))
+    hist=ROOT.TH1D(x_name,x_name,channels,0.9*np.min(array),1.1*np.max(array))
     fill_h(hist,array)
     hist.SetLineColor(linecolor)
     hist.SetLineWidth(linewidth)
-    hist.GetXaxis().SetTitle("Gain")
+    hist.GetXaxis().SetTitle(x_name)
     hist.GetYaxis().SetTitle("Entries")
     hist.Write()
     hist.SetStats(False)
@@ -100,6 +96,8 @@ def hist(list, x_name, channels=100, linecolor=4, linewidth=4):
     return hist
 
 
+
+
 print("#################################################################################################################")
 print("         Chose the REFERENCE dataset: ")
 print("Copy/Paste one name from the following list, if it is not present you should generate the dataset")
@@ -107,95 +105,126 @@ print("#########################################################################
 os.system("ls -lrt ../TP_correction/*.csv")
 print("#################################################################################################################")
 reference=input("Insert only the datset name: ")
+#to_corr="Dataset_2021-09-22_2021-10-20"
+
+print("#################################################################################################################")
+print("         Chose the dataset to analyze (write 'same' to sun the anaysis on the same dataset): ")
+print("Copy/Paste one name from the following list, if it is not present you should generate the dataset")
+print("#################################################################################################################")
+os.system("ls -lrt ../TP_correction/*.csv")
+print("#################################################################################################################")
+in_string=input("Insert only the datset name: ")
+if in_string=="same":
+    to_anal=reference
+else:
+    to_anal=in_string
 
 
 df_ref=pd.read_csv("../TP_correction/"+str(reference)+".csv", delimiter=";")
+df_anal=pd.read_csv("../TP_correction/"+str(to_anal)+".csv", delimiter=";")
+
 print("#################################################################################################################")
 print("CSV file columns: ")
 col_ref=df_ref.columns
+col_anal=df_anal.columns
 print(col_ref)
 print("#################################################################################################################")
+"""
+df_anal=pd.read_csv("../TP_correction/"+str(reference)+".csv", delimiter=";")
+
+print("#################################################################################################################")
+print("CSV file columns: ")
+col_anal=df_ref.columns
+print(col_anal)
+print("#################################################################################################################")
+"""
+
+if in_string=="same":
+    main=ROOT.TFile("Root_"+str(reference)+"_analyzed_with_same.root","RECREATE")
+else:
+    main=ROOT.TFile("Root_"+str(reference)+"_analyzed_with_"+str(to_anal)+".root","RECREATE")
 
 
-bins=1000
-
-main=ROOT.TFile("Extracted_"+str(reference)+"_fakeWarningExtraction.root","RECREATE")
 #plot the histogram and scatter of reference and anal dataset
 main.mkdir("plots")
 main.cd("plots")
 
 time_ref=np.arange(0,len(df_ref[col_ref[0]]))
 etime_ref=1E-20*np.ones(len(df_ref[col_ref[0]]))
-ref_gain=nparr(df_ref[col_ref[0]])
-err_ref_gain=nparr(df_ref[col_ref[1]])
+
+time_anal=np.arange(0,len(df_anal[col_anal[0]]))
+etime_anal=1E-20*np.ones(len(df_anal[col_anal[0]]))
+
 
 plot_ref=grapherr(time_ref, df_ref[col_ref[0]], etime_ref, df_ref[col_ref[1]], "Time (a.u.)", "Corrected gain Reference" , 4, 22)
-hist_ref=hist(df_ref[col_ref[0]], "Corrected gain reference", bins, 4)
+hist_ref=hist(df_ref[col_ref[0]], "Corrected gain reference", 1000, 4)
 
-#scale the histogram
-hist_ref.Scale(1./hist_ref.Integral())
-hist_ref.Write()
-
-#associate frequencies to each histogram bin
-xk=np.empty(bins)
-pk=np.empty(bins)
-for i in range(bins):
-    pk[i]=hist_ref.GetBinContent(i)
-    xk[i]=hist_ref.GetBinCenter(i)
-
-#normalize the proabbilities
-pk_norm = tuple(p/sum(pk) for p in pk)
-#create the function where to extract
-custm = stats.rv_discrete(name='custm', values=(xk, pk_norm))
-
-
-#test for extraction
-R = custm.rvs(size=5000)
-hist_try= ROOT.TH1D("Extracted values","Extracted values;Effective Gas Gain; Entries", bins, 0.9*np.min(ref_gain), 1.1*np.max(ref_gain))
-fill_h(hist_try, R)
-hist_try.Write()
+plot_anal=grapherr(time_anal, df_anal[col_anal[0]], etime_anal, df_anal[col_anal[1]], "Time (a.u.)", "Corrected gain Anal" , 4, 22)
+hist_anal=hist(df_anal[col_anal[0]], "Corrected gain anal", 1000, 4)
 
 
 
-#running the scan
-#incresing the av gain by one at each interacion
-increase=1
-steps=5000
-sim_gain=np.empty(steps)
-
-
-main.mkdir("Simulation")
-main.cd("Simulation")
-
-for i in range(steps):
-    sim_gain[i]=custm.rvs()+i
-
-simulated=np.concatenate((R, sim_gain))
-time=np.arange(0,len(simulated), 1)
-
-plot_sim=graph(time, simulated, "Time (a.u.)", "Simualted gain" , 4, 22)
-
+#computing mean and std reference and acquiring
 
 ref_gain=nparr(df_ref[col_ref[0]])
+err_ref_gain=nparr(df_ref[col_ref[1]])
+anal_gain=nparr(df_anal[col_anal[0]])
+err_anal_gain=nparr(df_anal[col_anal[1]])
 
 mean=np.mean(ref_gain)
 sigma=np.std(ref_gain)
 av=10
-def tvalue(sample):
+print("mu:", mean, "sigma:", sigma)
+#function for t-calculation
+
+def tvalue(sample, error):
     tvalues=np.empty(len(sample)-av)
     for i in range(len(tvalues)):
         temp_m=np.mean(sample[i:i+av])
         temp_s=np.std(sample[i:i+av])
 
-         #print(mean, temp_m, sigma, temp_s)
-        tvalues[i]=(temp_m-mean)/(m.sqrt(sigma*sigma+temp_s*temp_s))
+        #print(mean, temp_m, sigma, temp_s)
+        tvalues[i]=(mean-temp_m)/(m.sqrt(sigma*sigma+temp_s*temp_s))
 
     return tvalues
 
 
-t_sim=tvalue(simulated)
+t_anal=tvalue(anal_gain, err_anal_gain)
 
-plot=graph(time[:-10], t_sim, "Time (a.u.)", "t_values" , 4, 22)
+main.cd()
+
+plot=graph(time_anal[:-10], t_anal, "Time (a.u.)", "t_values" , 4, 22)
+c_plot=canvas(plot)
+c_plot.SaveAs("./output_plots/"+"Ref_"+str(reference)+"_Anal_"+str(in_string)+"tVStime.png")
+c_plot.SaveAs("./output_plots/"+"Ref_"+str(reference)+"_Anal_"+str(in_string)+"tVStime.pdf")
+
+
+hist=hist(t_anal, "t_values", channels=1000)
+c_hist=ROOT.TCanvas("t_values","t-values", 800, 800)
+c_hist.SetFillColor(0);
+c_hist.SetBorderMode(0);
+c_hist.SetBorderSize(2);
+c_hist.SetTopMargin(0.1);
+c_hist.SetBottomMargin(0.1);
+c_hist.SetFrameBorderMode(0);
+c_hist.SetFrameBorderMode(0);
+c_hist.SetFixedAspectRatio();
+hist.Draw()
+c_hist.Write()
+c_hist.SaveAs("./output_plots/"+"Ref_"+str(reference)+"_Anal_"+str(in_string)+"tdistr.png")
+c_hist.SaveAs("./output_plots/"+"Ref_"+str(reference)+"_Anal_"+str(in_string)+"tdistr.pdf")
+
+#create DataFrame
+dt=pd.DataFrame( { "tvalues":t_anal  } )
+#write dataframe
+if in_string=="same":
+    dt.to_csv("Analyzed_"+str(to_anal)+"_with_same.csv", sep=';', header=True, index=False, mode='w')
+else:
+    dt.to_csv("Analyzed_"+str(to_anal)+"_with_"+str(reference)+".csv", sep=';', header=True, index=False, mode='w')
+
+
+
+
 
 
 

@@ -11,10 +11,11 @@ import os
 from array import array
 import argparse
 
+ROOT.gROOT.SetBatch(True)
+
 parser = argparse.ArgumentParser()
 parser.add_argument("-n", "--name", help="set the name of the dataset",default=None)
 args = parser.parse_args()
-
 
 def plot_plot(marker,color,x,y,e_x,e_y,title_x, title_y):
 
@@ -34,23 +35,6 @@ def plot_plot(marker,color,x,y,e_x,e_y,title_x, title_y):
 
     return plot
 
-def nparr(string):
-    return np.array(string, dtype="d")
-
-def to_ROOT_arr(list):
-    "Convert current timestamp to ROOT feasible time axis"
-    x=array('d')
-    for i in list:
-        year=int(i[0:4])
-        month=int(i[5:7])
-        day=int(i[8:10])
-        hour=int(i[11:13])
-        minute=int(i[14:16])
-        second=int(i[17:19])
-        #print(year, month, day, hour, minute, second)
-        dat=ROOT.TDatime(year, month, day, hour, minute, second)
-        x.append( int( dat.Convert() ) )
-    return x
 
 def hist(list, x_name, channels=100, linecolor=4, linewidth=4):
     def fill_h(histo_name, array):
@@ -71,6 +55,24 @@ def hist(list, x_name, channels=100, linecolor=4, linewidth=4):
     hist.GetXaxis().SetMaxDigits(3);
     #hist.Write()
     return hist
+
+def nparr(string):
+    return np.array(string, dtype="d")
+
+def to_ROOT_arr(list):
+    "Convert current timestamp to ROOT feasible time axis"
+    x=array('d')
+    for i in list:
+        year=int(i[0:4])
+        month=int(i[5:7])
+        day=int(i[8:10])
+        hour=int(i[11:13])
+        minute=int(i[14:16])
+        second=int(i[17:19])
+        #print(year, month, day, hour, minute, second)
+        dat=ROOT.TDatime(year, month, day, hour, minute, second)
+        x.append( int( dat.Convert() ) )
+    return x
 
 def grapherr(x,y,ex,ey,x_string, y_string, color=4, markerstyle=22, markersize=1):
         plot = ROOT.TGraphErrors(len(x),  np.array(x  ,dtype="d")  ,   np.array(y  ,dtype="d") , np.array(   ex   ,dtype="d"),np.array( ey   ,dtype="d"))
@@ -114,12 +116,6 @@ def canvas(plot, size=800, leftmargin=0.1, rightmargin=0.2):
     can1.Write()
     can1.SaveAs(y_name+" vs "+x_name+".png")
     return can1
-#define filling histogram function
-def fill_h(histo_name, array):
-    for x in range (len(array)):
-        histo_name.Fill((np.array(array[x] ,dtype="d")))
-
-
 
 f = open("anal_parameters.txt", "r")
 print("############################################################")
@@ -134,6 +130,7 @@ for x in f:
     exec(var+"="+str(val))
 f.close()
 
+
 print("#################################################################################################################")
 print("         Chose the Gain measurement to use ")
 print("Copy/Paste one FOLDER name")
@@ -141,7 +138,7 @@ print("#########################################################################
 os.system("ls -lrt ../../Gain_FIT")
 print("#################################################################################################################")
 folder=input("Insert only the FOLDER name: ")
-#folder="30072021"
+
 
 f = open("../../Gain_FIT/"+str(folder)+"/fit_parameters.txt", "r")
 print("############################################################")
@@ -156,7 +153,6 @@ for x in f:
     exec(var+"="+str(val))
 f.close()
 
-
 print("#################################################################################################################")
 print("         Chose the dataset to analyze ")
 print("Copy/Paste one name from the following list, if it is not present you should generate the dataset")
@@ -164,17 +160,8 @@ print("#########################################################################
 os.system("ls -lrt ../../Script_downloadAggregate/*.csv")
 print("#################################################################################################################")
 input=input("Insert only the datset name: ")
-#input="Baseline"
 
 df=pd.read_csv("../../Script_downloadAggregate/"+str(input)+".csv", delimiter=";")
-
-print("#################################################################################################################")
-print("CSV file columns: ")
-col=df.columns
-print(col)
-print("#################################################################################################################")
-
-main=ROOT.TFile("root_"+str(input)+".root","RECREATE")
 
 #compute from scratch rate, gain and error
 def rate_calc(timestamp,r0,start):
@@ -203,115 +190,122 @@ print(rate)
 gain=-1*nparr(df["Mean Current"])/(200*1.6E-19*rate)
 err_gain=nparr(df["Mean Error"])/(200*1.6E-19*rate)
 
+if args.name is None: input=input
+else: input=args.name
+
+print("#################################################################################################################")
+print("CSV file columns: ")
+col=df.columns
+print(col)
+print("#################################################################################################################")
+
+
+#get average of T, P and gain form the first 1000 samples of hte dataset
+main=ROOT.TFile("root_"+str(input)+".root","RECREATE")
+
+time_all=np.arange(0,len(df[col[0]]))
+etime_all=1E-20*np.ones(len(df[col[0]]))
 
 V=np.mean(nparr(df["Vmon"]))
 print("V=",V)
 
-"""
-time_all=np.arange(0,len(df[col[0]]))
-etime_all=1E-20*np.ones(len(df[col[0]]))
-
+print("Fitting...")
 ############################################################################################
 main.mkdir("Entry Variables")
 main.cd("Entry Variables")
 #varieables with errorrs
-for i in (3,5,7):
+for i in (3,22):
     grapherr(time_all, df[col[i]], etime_all, df[col[i+1]], "Time (a.u.)", col[i] )
 #variables without errors
-for i in (9,10,11,12,13,14,17,18,19,20,21):
+for i in (5,6,7,3,10,13,14,15,19,20,21,24):
     graph(time_all, df[col[i]], "Time (a.u.)", col[i] )
 #bonus
 graph(time_all, df["T"]/df["P"], "Time (a.u.)", "T/P" )
 ############################################################################################
 
 ############################################################################################
-main.mkdir("Gain vs other variables")
-main.cd("Gain vs other variables")
+main.mkdir("Meas Gain vs other variables")
+main.cd("Meas Gain vs other variables")
 
-for i in (9,10,11,12,13,14,17,18,19,20, 21):
-    grapherr(df[col[i]], gain, etime_all, err_gain,   col[i], "Gain" )
+for i in (5,6,7,3,10,13,14,15):
+    grapherr(df[col[i]], gain, etime_all, err_gain,   col[i], "Gain Measured" )
 #bonus
-grapherr(df["T"]/df["P"],gain, etime_all, err_gain, "T/P", "Gain" )
+grapherr(df["T"]/df["P"],gain, etime_all, err_gain, "T/P", "Gain Measured" )
 ############################################################################################
 
 ############################################################################################
 #graph of the gain vs T and P
 main.cd()
-gtp=ROOT.TGraph2D(len(df["T"]), nparr(df["T"]),nparr(df["P"]), nparr(gain));
+gtp=ROOT.TGraph2D(len(df["T"]), nparr(df["T"]),nparr(df["P"]), gain);
 gtp.GetXaxis().SetTitle("Temperature")
 gtp.GetYaxis().SetTitle("Pressure")
-gtp.GetXaxis().SetTitle("Gain")
+gtp.GetXaxis().SetTitle("Gain Measured")
 gtp.Write()
 ############################################################################################
-"""
-
-pi=nparr(df["P"])
-ti=nparr(df["T"])
-
-time=[x for x in range(len(gain))]
-err_time=[0.001 for x in range(len(gain))]
-
-points=int(points)
-a = np.random.uniform(a_min,a_max,points)
-b = np.random.uniform(b_min,b_max,points)
-
-#define filling histogram function
-def fill_h(histo_name, array):
-    for x in range (len(array)):
-        histo_name.Fill((np.array(array[x] ,dtype="d")))
-
-def correction_ab(G,err_G,a,b,p,t):
-    """
-    applies the correction for a certain value of a and b
-    """
-
-    X=G**(  (P0/p)**(-a)  *  (t/T0)**(-b)   )
-    #Y= A**   (  (P0/p)**(a)  *  (t/T0)**(b)    )
-    Y= A**   (  (P0/p)**(-a)  *  (t/T0)**(-b)        -1)
-    #Y=1
-    corr=X/Y
-
-    #X=(P0/p)**(-a)
-    #Y=(t/T0)**(-b)
-
-    #err_a=0
-    #err_b=0
-
-    #error=   (A**(1-X*Y)) * (G**(X*Y)) * X * Y * np.sqrt( np.square(err_G/G) +      np.square( err_a*np.log(P0/p)*(np.log(A)-np.log(G)) ) + np.square( (np.log(A)-np.log(G))*err_b*np.log(t/T0) )     )
 
 
-    #return np.array([corr, error], dtype="d")
-    return np.array(corr, dtype="d")
+############################################################################################
+"""def chi2func(Gi,dGi,a,b,pi,ti):
+    chiq=np.empty([len(Gi),int(points)])
+    model=np.empty([len(Gi),int(points)])
 
-means=np.empty(points)
-sigmas=np.empty(points)
-main.mkdir("all Plots")
-main.cd("all Plots")
-for i in tqdm.tqdm(range(points)):
-    corr=correction_ab(gain, err_gain, a[i], b[i], pi, ti)
+    model=A*np.exp(B*V*((P0/pi)**a)*((ti/T0)**b))
 
-    #plot=plot_plot(time,corr,err_time,err,"Time (a.u.)", "Gain @ "+str(a[i])+" "+str(b[i]))
+    print(B*V*((P0/pi)**0.4)*((ti/T0)**0.4))
 
-    #means[i]=np.mean(corr)
-    sigmas[i]=np.std(corr)
+    chiq=np.sum( np.square(Gi-model)/dGi, axis=1    )
+    return chiq/(len(Gi)-2)"""
 
-    #plot_canvas(plot,"Time (a.u.)", "Gain" )
+def chi2func(Gi,dGi,a,b,pi,ti):
+
+    chiq=np.empty([len(Gi),int(points)])
+    model=np.empty([len(Gi),int(points)])
+
+    model=A*np.exp(B*V*((P0/pi)**a)*((ti/T0)**b))
+
+    chiq=np.sum( np.square(Gi-model)/dGi, axis=1    )
+    return chiq/(len(Gi)-2)
 
 
-###############################################################################################################################
+############################################################################################
 
-print("Minimum of sigma",np.min(sigmas))
-index=np.argmin(sigmas)
+############################################################################################
+#search of the chi2 min
+a = np.random.uniform(a_min,a_max,int(points)).reshape((int(points),1))
+b = np.random.uniform(b_min,b_max,int(points)).reshape((int(points),1))
+
+chi=chi2func(gain,err_gain,a,b,nparr(df["P"]),nparr(df["T"]))
+#chi[chi > 1E100] = 1E100
+
+print("Minimum of reduced chi2",np.min(chi))
+index=np.argmin(chi)
 print("a @ min: ", a[index])
 print("b @ min: ", b[index])
+############################################################################################
 
+############################################################################################
+p_err=int(int(points)/10)
+#find parameters error
+a_err = np.random.uniform(a[index]-1E-4,a[index]+1E-4,p_err).reshape((p_err,1))
+b_err = np.random.uniform(b[index]-1E-4,b[index]+1E-4,p_err).reshape((p_err,1))
+chi_err=chi2func(gain,err_gain,a_err,b_err,nparr(df["P"]),nparr(df["T"]))
+probable=chi_err[chi_err>chi[index]+1]
+#print("int(points) >1 (%): ",(len(probable)/p_err)*100)
 
-main.cd()
-can1=ROOT.TCanvas("Sigma values","Sigma values", 1000, 1000)
+print("chi2+1 @ err: ",np.min(chi_err))
+index_err=np.argmin(chi_err)
+err_a=abs(a_err[index_err]-a[index])
+err_b=abs(b_err[index_err]-b[index])
+print("err_a @ min: ", err_a)
+print("err_b @ min: ", err_b)
+############################################################################################
+
+############################################################################################
+can1=ROOT.TCanvas("Chi2 values","Chi2 values", 1000, 1000)
 can1.SetFillColor(0);
 can1.SetBorderMode(0);
 can1.SetBorderSize(2);
-can1.SetLeftMargin(0.1);
+can1.SetLeftMargin(0.15);
 can1.SetRightMargin(0.2);
 can1.SetTopMargin(0.1);
 can1.SetBottomMargin(0.1);
@@ -319,20 +313,24 @@ can1.SetFrameBorderMode(0);
 can1.SetFrameBorderMode(0);
 can1.SetFixedAspectRatio();
 
-g2_1=ROOT.TGraph2D("Sigma values","Sigma values",len(a), a,b,sigmas);
+g2_1=ROOT.TGraph2D("","",len(a), a,b,chi);
 g2_1.Draw("colz")
+
+can1.Update()
 
 g2_1.GetXaxis().SetTitle("Parameter a")
 g2_1.GetYaxis().SetTitle("Parameter b")
-g2_1.GetZaxis().SetTitle("StD")
+g2_1.GetZaxis().SetTitle("#chi^{2}/ndf")
 
 
-can1.Update()
+
+#can1.SetLogz()
 can1.Write()
+
 pt1  = ROOT.TPaveText(0.55,0.75,0.65,0.85,"NDC");
-pt1.AddText("a*= "+str('{:.3f}'.format(a[index])));
-pt1.AddText("b*= "+str('{:.3f}'.format(b[index])));
-pt1.AddText("#chi^{2}*/NDF= "+str('{:.2f}'.format(sigmas[index])));
+pt1.AddText("a*= "+str('{:.3f}'.format(a[index][0]))+" #pm "+str('{:.3f}'.format(err_a[0])));
+pt1.AddText("b*= "+str('{:.3f}'.format(b[index][0]))+" #pm "+str('{:.3f}'.format(err_b[0])));
+pt1.AddText("#chi^{2}*/NDF= "+str('{:.2f}'.format(chi[index])));
 pt1.SetBorderSize(0);
 pt1.SetLineColor(1);
 pt1.SetLineStyle(1);
@@ -345,30 +343,25 @@ pt1.SetTextAlign(11);
 pt1.SetFillStyle(3050);
 pt1.Draw("SAME")
 
-can1.SaveAs("./output_plots/sigma"+input+".png")
-can1.SaveAs("./output_plots/sigma"+input+".pdf")
+can1.SaveAs("./output_plots/chi2"+input+".png")
+can1.SaveAs("./output_plots/chi2"+input+".pdf")
+############################################################################################
 
 
-can2=ROOT.TCanvas("Sigma values","Sigma values", 1000, 1000)
-can2.SetFillColor(0);
-can2.SetBorderMode(0);
-can2.SetBorderSize(2);
-can2.SetLeftMargin(0.1);
-can2.SetRightMargin(0.1);
-can2.SetTopMargin(0.1);
-can2.SetBottomMargin(0.1);
-can2.SetFrameBorderMode(0);
-can2.SetFrameBorderMode(0);
-can2.SetFixedAspectRatio();
 
-g2_2=g2_1.Clone()
-g2_2.GetXaxis().SetTitle("a")
-g2_2.GetYaxis().SetTitle("b")
-g2_2.Draw("surf1")
 
-#can2.SetLogz()
-can2.Write()
+############################################################################################
+f = open("results_"+input+".csv", "w")
+f.write("ndf;"+str(len(df["Gain Measured"])-2)+"\n")
+f.write("reduced_chi;"+str(chi[index])+"\n")
+f.write("a;"+str(a[index][0])+"\n")
+f.write("e_a;"+str(err_a[0])+"\n")
+f.write("b;"+str(b[index][0])+"\n")
+f.write("e_b;"+str(err_b[0])+"\n")
 
+f.close()
+
+############################################################################################
 
 
 
@@ -399,9 +392,11 @@ def correction_ab_full(G,err_G,a,b,p,t):
 
 
 
-[corr_gain, e_corr_gain]=correction_ab_full(gain, err_gain, a[index], b[index], pi, ti)
+[corr_gain, e_corr_gain]=correction_ab_full(gain, err_gain, a[index], b[index],nparr(df["P"]),nparr(df["T"]))
 
 
+time=[x for x in range(len(gain))]
+err_time=[0.001 for x in range(len(gain))]
 
 
 
@@ -492,13 +487,6 @@ cv_histo.SaveAs("./output_plots/"+"Corrected_"+str(input)+"_withitself.pdf");
 ###########################################################################
 
 
-f = open("results_"+input+".csv", "w")
-f.write("a;"+str(a[index])+"\n")
-f.write("e_a;"+str(1E-3*a[index])+"\n")
-f.write("b;"+str(b[index])+"\n")
-f.write("e_b;"+str(1E-3*b[index])+"\n")
-
-f.close()
 
 
 
@@ -510,7 +498,19 @@ f.close()
 
 
 
-####################################################################################################################################
 
 
 
+
+
+
+
+
+
+
+#
+#
+#
+#
+#
+#

@@ -11,6 +11,9 @@ import awkward
 import uproot
 import math as m
 import os
+from scipy import stats
+
+ROOT.gROOT.SetBatch(True)
 
 def nparr(string):
     return np.array(string, dtype="d")
@@ -30,6 +33,10 @@ def to_ROOT_arr(list):
         x.append( int( dat.Convert() ) )
     return x
 
+#define filling histogram function
+def fill_h(histo_name, array):
+    for x in range (len(array)):
+        histo_name.Fill((np.array(array[x] ,dtype="d")))
 
 def grapherr(x,y,ex,ey,x_string, y_string, color=4, markerstyle=22, markersize=1):
         plot = ROOT.TGraphErrors(len(x),  np.array(x  ,dtype="d")  ,   np.array(y  ,dtype="d") , np.array(   ex   ,dtype="d"),np.array( ey   ,dtype="d"))
@@ -37,6 +44,7 @@ def grapherr(x,y,ex,ey,x_string, y_string, color=4, markerstyle=22, markersize=1
         plot.GetXaxis().SetTitle(x_string)
         plot.GetYaxis().SetTitle(y_string)
         plot.SetMarkerColor(color)#blue
+        plot.SetLineColor(color)#blue
         plot.SetMarkerStyle(markerstyle)
         plot.SetMarkerSize(markersize)
         plot.Write()
@@ -53,7 +61,7 @@ def graph(x,y,x_string, y_string, color=4, markerstyle=22, markersize=1):
         plot.Write()
         return plot
 
-def canvas(plot, size=800, leftmargin=0.1, rightmargin=0.2):
+def canvas(plot, size=800, leftmargin=0.1, rightmargin=0.2, log=0):
     y_name=plot.GetYaxis().GetTitle()
     x_name=plot.GetXaxis().GetTitle()
     can1=ROOT.TCanvas(y_name+" vs "+x_name,y_name+" vs "+x_name, size, size)
@@ -67,8 +75,11 @@ def canvas(plot, size=800, leftmargin=0.1, rightmargin=0.2):
     can1.SetFrameBorderMode(0);
     can1.SetFrameBorderMode(0);
     can1.SetFixedAspectRatio();
-
     plot.Draw("ALP")
+
+    if log==1:
+        can1.SetLogy()
+
 
     can1.Write()
     can1.SaveAs(y_name+" vs "+x_name+".png")
@@ -81,7 +92,7 @@ def hist(list, x_name, channels=100, linecolor=4, linewidth=4):
 
     array=np.array(list ,dtype="d")
 
-    hist=ROOT.TH1D(x_name,x_name,channels,0.9*np.min(array),1.1*np.max(array))
+    hist=ROOT.TH1D(x_name,x_name,channels,0.99*np.min(array),1.01*np.max(array))
     fill_h(hist,array)
     hist.SetLineColor(linecolor)
     hist.SetLineWidth(linewidth)
@@ -95,8 +106,6 @@ def hist(list, x_name, channels=100, linecolor=4, linewidth=4):
     return hist
 
 
-
-
 print("#################################################################################################################")
 print("         Chose the REFERENCE dataset: ")
 print("Copy/Paste one name from the following list, if it is not present you should generate the dataset")
@@ -104,103 +113,128 @@ print("#########################################################################
 os.system("ls -lrt ../TP_correction/*.csv")
 print("#################################################################################################################")
 reference=input("Insert only the datset name: ")
-#to_corr="Dataset_2021-09-22_2021-10-20"
-
-print("#################################################################################################################")
-print("         Chose the dataset to analyze (write 'same' to sun the anaysis on the same dataset): ")
-print("Copy/Paste one name from the following list, if it is not present you should generate the dataset")
-print("#################################################################################################################")
-os.system("ls -lrt ../TP_correction/*.csv")
-print("#################################################################################################################")
-in_string=input("Insert only the datset name: ")
-if in_string=="same":
-    to_anal=reference
-else:
-    to_anal=in_string
 
 
 df_ref=pd.read_csv("../TP_correction/"+str(reference)+".csv", delimiter=";")
-df_anal=pd.read_csv("../TP_correction/"+str(to_anal)+".csv", delimiter=";")
-
 print("#################################################################################################################")
 print("CSV file columns: ")
 col_ref=df_ref.columns
-col_anal=df_anal.columns
 print(col_ref)
 print("#################################################################################################################")
-"""
-df_anal=pd.read_csv("../TP_correction/"+str(reference)+".csv", delimiter=";")
 
-print("#################################################################################################################")
-print("CSV file columns: ")
-col_anal=df_ref.columns
-print(col_anal)
-print("#################################################################################################################")
-"""
+gaus = ROOT.TF1("gaus","gaus",0,10)
 
-if in_string=="same":
-    main=ROOT.TFile("Root_"+str(reference)+"_analyzed_with_same.root","RECREATE")
-else:
-    main=ROOT.TFile("Root_"+str(reference)+"_analyzed_with_"+str(to_anal)+".root","RECREATE")
+main=ROOT.TFile("Qauntiles_"+str(reference)+".root","recreate")
 
+bins=1000
 
+#main=ROOT.TFile("Root_"+str(reference)+"_fakeWarning.root","RECREATE")
 #plot the histogram and scatter of reference and anal dataset
-main.mkdir("plots")
-main.cd("plots")
+main.mkdir("reference plots")
+main.cd("reference plots")
 
 time_ref=np.arange(0,len(df_ref[col_ref[0]]))
 etime_ref=1E-20*np.ones(len(df_ref[col_ref[0]]))
-
-time_anal=np.arange(0,len(df_anal[col_anal[0]]))
-etime_anal=1E-20*np.ones(len(df_anal[col_anal[0]]))
-
-
-plot_ref=grapherr(time_ref, df_ref[col_ref[0]], etime_ref, df_ref[col_ref[1]], "Time (a.u.)", "Corrected gain Reference" , 4, 22)
-hist_ref=hist(df_ref[col_ref[0]], "Corrected gain reference", 1000, 4)
-
-plot_anal=grapherr(time_anal, df_anal[col_anal[0]], etime_anal, df_anal[col_anal[1]], "Time (a.u.)", "Corrected gain Anal" , 4, 22)
-hist_anal=hist(df_anal[col_anal[0]], "Corrected gain anal", 1000, 4)
-
-
-
-#computing mean and std reference and acquiring
-
 ref_gain=nparr(df_ref[col_ref[0]])
 err_ref_gain=nparr(df_ref[col_ref[1]])
-anal_gain=nparr(df_anal[col_anal[0]])
-err_anal_gain=nparr(df_anal[col_anal[1]])
 
-mean=np.mean(ref_gain)
-sigma=np.std(ref_gain)
+plot_ref=grapherr(time_ref, df_ref[col_ref[0]], etime_ref, df_ref[col_ref[1]], "Time (a.u.)", "Corrected gain Reference" , 4, 22)
+hist_ref=hist(df_ref[col_ref[0]], "Corrected gain reference", bins, 4)
+
+
+gaus = ROOT.TF1("gaus","gaus",0.99*np.min(ref_gain),1.01*np.max(ref_gain))
+
+#scale the histogram
+hist_ref.Scale(1./hist_ref.Integral())
+
+mean = np.mean(ref_gain)
+sigma = np.std(ref_gain)
+
+
+#t computation
+main.cd()
 av=10
-#function for t-calculation
-
-def tvalue(sample, error):
+def tvalue(sample):
     tvalues=np.empty(len(sample)-av)
     for i in range(len(tvalues)):
         temp_m=np.mean(sample[i:i+av])
         temp_s=np.std(sample[i:i+av])
 
-         #print(mean, temp_m, sigma, temp_s)
+        #print(mean, temp_m, sigma, temp_s)
         tvalues[i]=(mean-temp_m)/(m.sqrt(sigma*sigma+temp_s*temp_s))
 
     return tvalues
 
 
-t_anal=tvalue(anal_gain, err_anal_gain)
+t_ref=tvalue(ref_gain)
 
-main.cd()
+plot=graph(time_ref[:-10], t_ref, "Time (a.u.)", "t_values" , 4, 22)
+hist=hist(t_ref, "t_values", bins, 4)
+hist.Scale(1./hist.Integral())
+hist.Write()
 
-plot=graph(time_anal[:-10], t_anal, "Time (a.u.)", "t_values" , 4, 22)
-hist=hist(t_anal, "t_values", 1000, 4)
+#associate frequencies to each histogram bin
+xk=np.empty(bins)
+pk=np.empty(bins)
+for i in range(bins):
+    pk[i]=hist.GetBinContent(i)
+    xk[i]=hist.GetBinCenter(i)
+
+threshold=np.arange(0,4,0.1)
+
+prob, err_prob=np.zeros(len(threshold)),np.zeros(len(threshold))
+
+for i in range(len(threshold)):
+    temp_prob=0
+    for j in range(bins):
+        if abs(xk[j])>=threshold[i]:
+            temp_prob=temp_prob+pk[j]
+        else:
+            temp_prob=temp_prob
+        if temp_prob>=1:
+            prob[i]=1.
+        else:
+            prob[i]=temp_prob
+        err_prob[i]=np.sqrt( ( prob[i] * (1-prob[i]) ) /bins )
+
+
+        #err_prob[i]=np.sqrt( ( prob[i] * (1-prob[i]) ) /bins )
+
+#print(err_prob)
+
+plot=grapherr(threshold, prob,1E-20*threshold, err_prob, "Threshold value", "Fake Warning Probability" , 4, 4, 1.5)
+
+
+cv= ROOT.TCanvas("cv", " ",0,0, 800,800)
+cv.SetFillColor(0);
+cv.SetBorderMode(0);
+cv.SetBorderSize(2);
+cv.SetLeftMargin(0.15);
+cv.SetRightMargin(0.040201);
+cv.SetTopMargin(0.1);
+cv.SetBottomMargin(0.1);
+cv.SetFrameBorderMode(0);
+cv.SetFrameBorderMode(0);
+cv.SetFixedAspectRatio();
+
+plot.Draw("AP")
+
+plot.GetYaxis().SetRangeUser(1E-7,2);
+#plot.GetXaxis().SetRangeUser(0,1.85);
+
+cv.SetLogy()
+cv.Update()
+
+
+#save as pdf and/or png
+cv.SaveAs("output_plots/FakeWarning"+str(reference)+".png");
+cv.SaveAs("output_plots/FakeWarning"+str(reference)+".pdf");
+#ROOT.gApplication.Run()
 
 #create DataFrame
-dt=pd.DataFrame( { "tvalues":t_anal  } )
+dt=pd.DataFrame( { "thresholds":threshold, "probability": prob, "err probability": err_prob  } )
 #write dataframe
-if in_string=="same":
-    dt.to_csv("Analyzed_"+str(to_anal)+"_with_same.csv", sep=';', header=True, index=False, mode='w')
-else:
-    dt.to_csv("Analyzed_"+str(to_anal)+"_with_"+str(reference)+".csv", sep=';', header=True, index=False, mode='w')
+dt.to_csv("ThresholdsFrom_"+str(reference)+".csv", sep=';', header=True, index=False, mode='w')
 
 
 
@@ -215,29 +249,7 @@ else:
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+#
 #
 #
 #
