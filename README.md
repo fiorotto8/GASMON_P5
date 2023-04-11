@@ -13,6 +13,8 @@ Just run this command on your machine. You may omit the --user option, but it is
 ```
 pip3 install --user -r requirements.txt
 ```
+**You also need ROOT to make it work!**
+
 ## Ensure the synchronization of the remote log directory
 Raw data are stored in ~/GasMon/Readout/logs/ on the remote machine. We use `rsync` to synchronize the local folder All_data/logs.
 The GasMon PC is not open to a direct connection outside CERN so a tunnel to a plus machine (or any PC on the CERN General Network is required)
