@@ -192,7 +192,7 @@ elif method=="m":
     print("#################################################################################################################")
     correction_par=input("Insert only the datset name: ")
     if correction_par=="same": f = open("../MiniminzingVariance/results_"+to_corr+".csv", "r")
-    else: f = open("../TP_Fit/"+correction_par+".csv", "r")
+    else: f = open("../MiniminzingVariance/"+correction_par+".csv", "r")
 else: print("You inserted the wrong letter my friend ;)")
 
 print("############################################################")

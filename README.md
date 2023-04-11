@@ -1,7 +1,7 @@
 **More info about the full repository and the purpose may be found here:**
 [3<sup>rd</sup> chapter of Davide's PhD Thesis](https://cds.cern.ch/record/2803932?ln=en)
 # -1 General notes
-### The early version of such code has been written during my first tries with Python and it received multiple patches. It's ugly but it works! Any suggestion of modification is more than welcome!!!
+### The early version of such code has been written during my first tries with Python and it received multiple patches. It's ugly but it works! Any suggestions or modifications are more than welcome!!!
 
 ### The `LOG_p5.txt` file contains the date of the important things that happened on the gas system regarding the GASMON system.
 
@@ -49,7 +49,7 @@ Every folder contains a `qc5.py` script that takes in input the `.csv` file with
 For new measurements please copy always the latest folder and keep the same format for the date.
 
 # 3 Step by Step Analysis
-We now see how to operate a data analysis locally to check the data and/or to set better values and thresholds. We will use just the measured data and not the processed data. Every directory, from now on, is contained in `GASMON_WorkingDirectory_stepBYstep`.
+We now see how to operate a data analysis locally to check the data and/or to set better values and thresholds. We will use just the measured data and not the processed data. Every directory, from now on, is contained in `StepAnalysis`.
 ## 3.1 Gain fit
 There are two ways to find the best parameters (namely *a* and *b*) for the correction. One fits the data with the model (in `TP_Fit`) and the other uses the model to find which parameters reduce the data variance (in `MinimizingVariance`).
 ### 3.1.1 TP_Fit directory
@@ -81,6 +81,7 @@ In this folder, you can generate the t_values trend and distribution by selectin
 
 ### 3.5 FakeWarning_Probability
 
-Starting for a corrected dataset, usually in this case you usually use a good reference one. The script execute a scan of threshold values and check the probability of having a warning on a given dataset
+Starting for a corrected dataset, usually in this case you usually use a good reference one. The script executes a scan of threshold values and check the probability of having a warning on a given dataset
 
 ## 4 Percentage Scan
+Usually before the end-of-year technical stop, we perform a scan of the CO2 percentage from the mixer to check if the calibration to pass from gain to CO2 is still the same. Usually, the scans are made from 35% to 25% of CO2 in a step of 5%. Copying the existing folder (2022 is there) and renaming it for the next calibration is enough. You should generate the dataset from the ususal `Script_downloadAggregate/create_dataset.py` script just in the interesting period. During the test pay attention to taking note of the change in percentage and write them down in the `timing_percentage.txt` in the same format as the old files. The code `percentage_analysis` requires some inputs to work such as the gain calibration, the dataset to use (the one you generated) and the T, P correction you want to use.
