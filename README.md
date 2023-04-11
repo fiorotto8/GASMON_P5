@@ -1,4 +1,18 @@
-# 0 Ensure the synchronization of the remote log directory
+# -1 General notes
+
+### The early version of such code has been written during my first tries with Python and it received multiple patches. It's ugly but it works! Any suggestion of modification is more than welcome!!!
+
+### The `LOG_p5.txt` file contains the date of the important things that happened on the gas system regarding the GASMON system.
+
+### In general, the `.txt`iles are synchronized and are required for the good behavior of the infrastructure, while the `.csv`files are related to the dataset so, in general, are not synchronized.
+# 0 Setting up the environment
+
+## Install requirements
+Just run this command on your machine. You may omit the --user option, but it is mandatory if you work on lxplus.
+```
+pip3 install --user -r requirements.txt
+```
+## Ensure the synchronization of the remote log directory
 Raw data are stored in ~/GasMon/Readout/logs/ on the remote machine. We use `rsync` to synchronize the local folder All_data/logs.
 The GasMon PC is not open to a direct connection outside CERN so a tunnel to a plus machine (or any PC on the CERN General Network is required)
 ### Add on your machine's ~/.ssh/config
@@ -12,11 +26,12 @@ Host gasmon_outside
     ProxyJump lxplus
 ```
 ### Run All_data/download_data.sh
-To run it you should give it permissions
+Before running, you should give it permissions
 ```
 sudo chmod 777 All_data/download_data.sh
 ```
 Passwords of your plus and later of the GasMon machine are requested.
+
 
 # 1 Create Dataset
 For any kind of the following analysis, you should generate a dataset that spans over a certain amount of time. The raw files from the GasMon are divided into days but the ```Script_downloadAggregate/create_dataset.py``` do the aggregation for you.
@@ -45,5 +60,11 @@ err_step;<step in the a and b directions for tha algorithm that look for the err
 ```
 **Pay attention to the number of points, you can go out of memory easily, 1000 is a good number if the range is not so large**
 The code asks you to select the name of the dataset generated that you want to fit. Also in this case you can specify with the `-n` argument the name of the output files. The latter is a .root file with the graph, a .csv with the results in tabular form and a .pdf and a .png with the chi2 plot in the a,b plane.
+**The correction plot you can find in the `.root` file is just to have a visual check about the correction made by the selected parameter, real correction for the next analysis step has to be done inside the `TP_correction` folder**
 ### 3.1.2 MinimizingVariance folder
-This code works similarly to the TP_Fit one. It has the same `anal_parameters.txt` file, but ir works differently. It doesn't use the correction model and fit the data but it applies the correction for a set of randomly generated *a* and *b* and it chose the pair that minimizes the variance of the final dataset. For this reason, this procedure is less dependent on the calibration (depends only on *A* and not on *B*) and form experience works slightly better than the fit.
+This code works similarly to the TP_Fit one. It has the same `anal_parameters.txt` file, but it works differently. It doesn't use the correction model and fit the data but it applies the correction for a set of randomly generated *a* and *b* and it chose the pair that minimizes the variance of the final dataset. For this reason, this procedure is less dependent on the calibration (depends only on *A* and not on *B*) and form experience works slightly better than the fit.
+**The correction plot you can find in the `.root` file is just to have a visual check about the correction made by the selected parameter, real correction for the next analysis step has to be done inside the `TP_correction` folder**
+
+### 3.2 TP_correction folder
+The correction is already made by the parameter finding codes TP_Fit and MinimingVariance. Here we generate the corrected dataset to be used in further analysis. Also in this case you can give a name to the dataset. Moreover, you can skip the method selected during code running by passing 'm' of 'f' as an argument using `-m`
+For this piece of code you cannot set a name because the name of the output file will keep track of the corrected dataset and the dataset used to correct

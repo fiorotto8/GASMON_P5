@@ -9,6 +9,33 @@ import uproot
 import sys
 import os
 from array import array
+import argparse
+
+parser = argparse.ArgumentParser()
+#parser.add_argument("-n", "--name", help="set the name of the dataset",default=None)
+parser.add_argument("-m", "--method", help="Set the correction metod: m or f",default=None)
+args = parser.parse_args()
+
+def rate_calc(timestamp,r0,start):
+#Calculate the hit rate of 55Fe source starting from a r0 measured @ start_date with second precision
+#wite the date in %Y-%m-%d_%H:%M:%S format
+#decay time is 1452.36 days or 12.55E9 seconds
+#NB -> timestamp has to be a list also if it is one-sized
+    def string_to_date(string):
+        return datetime.datetime.strptime(string, '%Y-%m-%d_%H:%M:%S')
+
+    start_date=start+'_12:00:00'
+
+    #r0=300
+    tau=1.255E8#seconds
+
+    rate=np.empty(len(timestamp))
+
+    for i in range(len(timestamp)):
+        dt=(string_to_date(timestamp[i])-string_to_date(start_date)).total_seconds()
+        rate[i]=r0*m.exp(-dt/tau)
+
+    return rate
 
 def nparr(string):
     return np.array(string, dtype="d")
@@ -91,7 +118,7 @@ def hist(list, x_name, channels=100, linecolor=4, linewidth=4):
     #hist.Write()
     return hist
 
-f = open("../TP_Fit/anal_parameters.csv", "r")
+f = open("../TP_Fit/anal_parameters.txt", "r")
 print("I############################################################")
 print("Input parameters are:")
 #the input parametrs are declared as variebales as they are neamed in the anal_parameters.csv file
@@ -108,12 +135,12 @@ print("#########################################################################
 print("         Chose the Gain measurement to use ")
 print("Copy/Paste one FOLDER name")
 print("#################################################################################################################")
-os.system("ls -lrt ../Gain_FIT")
+os.system("ls -lrt ../../Gain_FIT")
 print("#################################################################################################################")
 folder=input("Insert only the FOLDER name: ")
 
 
-f = open("../Gain_FIT/"+str(folder)+"/fit_parameters.csv", "r")
+f = open("../../Gain_FIT/"+str(folder)+"/fit_parameters.txt", "r")
 print("############################################################")
 print("Gain Fit parameters are:")
 #the input parametrs are declared as variebales as they are neamed in the anal_parameters.csv file
@@ -131,34 +158,40 @@ print("#########################################################################
 print("         Chose the dataset to correct ")
 print("Copy/Paste one name from the following list, if it is not present you should generate the dataset")
 print("#################################################################################################################")
-os.system("ls -lrt ../Script_downloadAggregate/*.csv")
+os.system("ls -lrt ../../Script_downloadAggregate/*.csv")
 print("#################################################################################################################")
 to_corr=input("Insert only the datset name: ")
 #to_corr="Dataset_2021-09-22_2021-10-20"
 
-print("Use Minizer or Fit results??")
-method=input("m/f?")
+
+if args.method is None:
+    print("Use Minizer or Fit results??")
+    method=input("m/f?")
+else: method=args.method
 
 if method=="f":
     print("#################################################################################################################")
     print("         Choose the analysis results to use ")
     print("Copy/Paste one name from the following list, if it is not present you should generate the correction")
+    print("IF YOU ARE SURE THE CORRETION HAS BEEN CREATED WITH THE SAME NAME AS THE ORIGNAL DATASETAND NO OTHER STRANGE NAMES HAS BEEN USED TYPE : same")
     print("#################################################################################################################")
     os.system("ls -lrt ../TP_Fit/*.csv")
     print("#################################################################################################################")
     correction_par=input("Insert only the datset name: ")
-    f = open("../TP_Fit/"+correction_par+".csv", "r")
-else:
+    if correction_par=="same": f = open("../TP_Fit/results_"+to_corr+".csv", "r")
+    else: f = open("../TP_Fit/"+correction_par+".csv", "r")
+elif method=="m":
     print("#################################################################################################################")
     print("         Choose the analysis results to use ")
     print("Copy/Paste one name from the following list, if it is not present you should generate the correction")
+    print("IF YOU ARE SURE THE CORRETION HAS BEEN CREATED WITH THE SAME NAME AS THE ORIGNAL DATASETAND NO OTHER STRANGE NAMES HAS BEEN USED TYPE : same")
     print("#################################################################################################################")
     os.system("ls -lrt ../MiniminzingVariance/*.csv")
     print("#################################################################################################################")
     correction_par=input("Insert only the datset name: ")
-    f = open("../MiniminzingVariance/"+correction_par+".csv", "r")
-
-
+    if correction_par=="same": f = open("../TP_Fit/results_"+to_corr+".csv", "r")
+    else: f = open("../TP_Fit/"+correction_par+".csv", "r")
+else: print("You inserted the wrong letter my friend ;)")
 
 print("############################################################")
 print("TP parameters are:")
@@ -172,13 +205,19 @@ for x in f:
     exec(var+"="+str(val))
 f.close()
 
-df=pd.read_csv("../Script_downloadAggregate/"+str(to_corr)+".csv", delimiter=";")
+df=pd.read_csv("../../Script_downloadAggregate/"+str(to_corr)+".csv", delimiter=";")
 
 print("#################################################################################################################")
 print("CSV file columns: ")
 col=df.columns
 print(col)
 print("#################################################################################################################")
+
+rate=rate_calc(df["Timestamp"],r0,folder)
+print(rate)
+gain=-1*nparr(df["Mean Current"])/(200*1.6E-19*rate)
+err_gain=nparr(df["Mean Error"])/(200*1.6E-19*rate)
+
 
 ############################################################################################
 
@@ -205,18 +244,18 @@ main=ROOT.TFile(str(to_corr)+"_corrected_with_"+str(correction_par)+".root","REC
 time_all=np.arange(0,len(df[col[0]]))
 etime_all=1E-20*np.ones(len(df[col[0]]))
 
-plot_nocorr=grapherr(time_all, df["Gain"], etime_all, df["err gain"], "Time (a.u.)", "Gain before correction" , 4, 22)
-hist_nocorr=hist(df["Gain"], "Gain before correction", 1000, 4)
+plot_nocorr=grapherr(time_all, gain, etime_all, err_gain, "Time (a.u.)", "Gain before correction" , 4, 22)
+hist_nocorr=hist(gain, "Gain before correction", 1000, 4)
 
-corrz=correction(df["Gain"], df["err gain"], df["T"], df["P"])
+corrz=correction(gain, err_gain, df["T"], df["P"])
 
 plot_corr=grapherr(time_all, corrz[0], etime_all, corrz[1], "Time (a.u.)", "Gain after correction" , 2, 23)
 hist_corr=hist(corrz[0], "Gain after correction", 1000, 2)
 
 ################################################################################################
 
-g_max=np.max([1.01*np.max(nparr(df["Gain"])),1.01*np.max(corrz[0]) ])
-g_min=np.min([0.99*np.min(nparr(df["Gain"])),0.99*np.min(corrz[0])])
+g_max=np.max([1.01*np.max(nparr(gain)),1.01*np.max(corrz[0]) ])
+g_min=np.min([0.99*np.min(nparr(gain)),0.99*np.min(corrz[0])])
 #print(g_min, g_max)
 
 ################################################################################################

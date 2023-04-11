@@ -1,6 +1,6 @@
-points;1000
+points;5000
 a_min;0.3
-a_max;0.6
+a_max;0.5
 b_min;0.4
-b_max;0.7
+b_max;0.6
 err_step;0.01

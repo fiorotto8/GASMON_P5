@@ -1,20 +1,20 @@
-22/09/2021 start of good operation with sensor in output
-20/10/2021 stop of good operation with sensor in output and passage to sensor in input
-23/11/2021 stop of good operation with sensor in input and passage to sensor open in air
-09/12/2021 stop of good operation with sensor open in air and passage to sensor in output
+22/09/2021 start of good operation with the sensor in output
+20/10/2021 stop of good operation with the sensor in output and passage to the sensor in input
+23/11/2021 stop of good operation with the sensor in input and passage to sensor open in air
+09/12/2021 stop of good operation with sensor open in the air and passage to the sensor in output
 09/12/2021 9:38 start of the percentage scan (CO2 from 25% to 35% with 0.3% steps)
 17/12/2021 9:00 system fully on CO2
 11/02/2022 11:00 system fully back in Ar/CO2
 13/04/2022 Closure of the gas due to GasGroup intervention
-20/04/2022 Gas line open back
-04/05/2022 new version of montoring code (colmuns are added)
-23/05/2022 Pump 1 at 2300 hrs, switch pump 2 on. Maintenance pump 1 planned for wednesday 25th of May
+20/04/2022 Gas line opened back
+04/05/2022 New version of monitoring code (columns are added)
+23/05/2022 Pump 1 at 2300 hrs, switch pump 2 on. Maintenance pump 1 planned for Wednesday 25th of May
 10/10/2022 Stopped for calibration
-11/10/2022 New calibratiation inserted!!
+11/10/2022 New calibration inserted!!
 19/11/2022 noted that the data are good from 16/10/2022
-29/11/2022 removal of predstribution filters, backup system test
+29/11/2022 removal of predistribution filters, backup system test
 09/02/2023 back to Ar/CO2
-10/02/2023 source positioned on detector with just one layer of kapton
+10/02/2023 source positioned on the detector with just one layer of Kapton
 16/02/2023 source in a different position
-20/02/2023 new calibration inserted
+20/02/2023 New calibration inserted
 21/02/2023 new working point selected Vmon=3313.5

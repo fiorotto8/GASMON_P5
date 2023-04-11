@@ -161,7 +161,7 @@ print("#########################################################################
 print("         Chose the dataset to analyze ")
 print("Copy/Paste one name from the following list, if it is not present you should generate the dataset")
 print("#################################################################################################################")
-os.system("ls -lrt ../../Script_downloadAggregate/*.txt")
+os.system("ls -lrt ../../Script_downloadAggregate/*.csv")
 print("#################################################################################################################")
 input=input("Insert only the datset name: ")
 #input="Baseline"

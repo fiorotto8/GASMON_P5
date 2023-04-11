@@ -15,6 +15,45 @@ parser = argparse.ArgumentParser()
 parser.add_argument("-n", "--name", help="set the name of the dataset",default=None)
 args = parser.parse_args()
 
+def plot_plot(marker,color,x,y,e_x,e_y,title_x, title_y):
+
+    x=nparr(x)
+    e_x=nparr(e_x)
+    y=nparr(y)
+    e_y=nparr(e_y)
+
+    plot = ROOT.TGraphErrors(len(x),x,y,e_x,e_y  )
+    plot.SetNameTitle(title_y+" vs "+title_x,title_y+" vs "+title_x)
+    plot.GetXaxis().SetTitle(title_x)
+    plot.GetYaxis().SetTitle(title_y)
+    plot.SetMarkerColor(color)#blue
+    plot.SetMarkerStyle(marker)
+    plot.SetMarkerSize(1.5)
+    plot.Write()
+
+    return plot
+
+
+def hist(list, x_name, channels=100, linecolor=4, linewidth=4):
+    def fill_h(histo_name, array):
+        for x in range (len(array)):
+            histo_name.Fill((np.array(array[x] ,dtype="d")))
+
+    array=np.array(list ,dtype="d")
+
+    hist=ROOT.TH1D(x_name,x_name,channels,0.99*np.min(array),1.01*np.max(array))
+    fill_h(hist,array)
+    hist.SetLineColor(linecolor)
+    hist.SetLineWidth(linewidth)
+    hist.GetXaxis().SetTitle("Gain")
+    hist.GetYaxis().SetTitle("Entries")
+    hist.Write()
+    hist.SetStats(False)
+    hist.GetYaxis().SetMaxDigits(3);
+    hist.GetXaxis().SetMaxDigits(3);
+    #hist.Write()
+    return hist
+
 def nparr(string):
     return np.array(string, dtype="d")
 
@@ -323,6 +362,127 @@ f.close()
 ############################################################################################
 
 
+
+#####################################################################################################################################################################################################################
+
+def correction_ab_full(G,err_G,a,b,p,t):
+    """
+    applies the correction for a certain value of a and b
+    """
+
+    X=G**(  (P0/p)**(-a)  *  (t/T0)**(-b)   )
+    #Y= A**   (  (P0/p)**(a)  *  (t/T0)**(b)    )
+    Y= A**   (  (P0/p)**(-a)  *  (t/T0)**(-b)        -1)
+    #Y=1
+    corr=X/Y
+
+    X=(P0/p)**(-a)
+    Y=(t/T0)**(-b)
+
+    err_a=0
+    err_b=0
+
+    error=   (A**(1-X*Y)) * (G**(X*Y)) * X * Y * np.sqrt( np.square(err_G/G) +      np.square( err_a*np.log(P0/p)*(np.log(A)-np.log(G)) ) + np.square( (np.log(A)-np.log(G))*err_b*np.log(t/T0) )     )
+
+
+    return np.array([corr, error], dtype="d")
+    #return np.array(corr, dtype="d")
+
+
+
+[corr_gain, e_corr_gain]=correction_ab_full(gain, err_gain, a[index], b[index],nparr(df["P"]),nparr(df["T"]))
+
+
+time=[x for x in range(len(gain))]
+err_time=[0.001 for x in range(len(gain))]
+
+
+
+####################################################################################################################################
+cv=ROOT.TCanvas("Gain","Gain", 800, 800)
+cv.SetFillColor(0);
+cv.SetBorderMode(0);
+cv.SetBorderSize(2);
+cv.SetLeftMargin(0.1497996);
+cv.SetRightMargin(0.1497996);
+cv.SetTopMargin(0.08110883);
+cv.SetBottomMargin(0.1190965);
+cv.SetFrameBorderMode(0);
+cv.SetFrameBorderMode(0);
+cv.SetFixedAspectRatio();
+
+
+plot1=plot_plot(22,4,time,gain,err_time,err_gain,"Time(a.u.)", "Measured Gain")
+plot2=plot_plot(23,2,time,corr_gain,err_time,e_corr_gain,"Time(a.u.)", "Corrected Gain")
+
+mg=ROOT.TMultiGraph()
+
+mg.Add(plot1)
+mg.Add(plot2)
+
+mg.SetName("Gain vs Time");
+mg.GetXaxis().SetTitle("Time(a.u.)")
+mg.GetYaxis().SetTitle("Effective gas gain")
+mg.GetXaxis().SetTitleSize(0.045);
+mg.GetYaxis().SetTitleSize(0.045);
+#mg.GetYaxis().SetRangeUser(0,2);
+#mg.GetXaxis().SetRangeUser(0,280);
+mg.GetYaxis().SetRangeUser(14E3,30E3);
+#mg.GetYaxis().SetRangeUser(0,2);
+mg.GetYaxis().SetMaxDigits(3);
+mg.GetXaxis().SetDecimals();
+mg.Draw("AP")
+
+leg = ROOT.TLegend(0.2,0.8,0.4,0.9);
+#leg.SetHeader("The Legend Title");
+leg.AddEntry(plot1,"Measured Gain");
+leg.AddEntry(plot2,"Corrected Gain");
+
+leg.Draw("SAME");
+
+cv.Update()
+
+#save as pdf and/or png
+cv.SaveAs("output_plots/GainTime"+str(input)+".png");
+cv.SaveAs("output_plots/GainTime"+str(input)+".pdf");
+#ROOT.gApplication.Run()
+
+################################################################################################
+hist_nocorr=hist(gain, "Gain before correction", 1000, 4)
+hist_corr=hist(corr_gain, "Gain after correction", 1000, 2)
+
+
+cv_histo= ROOT.TCanvas("cv_histo", " ",0,0, 1000,1000)
+cv_histo.SetFillColor(0);
+cv_histo.SetBorderMode(0);
+cv_histo.SetBorderSize(2);
+cv_histo.SetLeftMargin(0.12);
+cv_histo.SetRightMargin(0.08);
+cv_histo.SetTopMargin(0.1);
+cv_histo.SetBottomMargin(0.1);
+cv_histo.SetFrameBorderMode(0);
+cv_histo.SetFrameBorderMode(0);
+cv_histo.SetFixedAspectRatio();
+
+hist_nocorr.Draw()
+hist_corr.Draw("SAME")
+
+cv_histo.Update()
+
+leg = ROOT.TLegend(0.1603206,0.7330595,0.4709419,0.8829569);
+#leg.SetHeader("The Legend Title");
+leg.AddEntry(hist_nocorr,"Measured Gain");
+leg.AddEntry(hist_corr,"Corrected Gain");
+leg.Draw("SAME");
+
+cv_histo.Update()
+
+cv_histo.Write()
+
+cv_histo.SaveAs("./output_plots/"+"Corrected_"+str(input)+"_withitself.png");
+cv_histo.SaveAs("./output_plots/"+"Corrected_"+str(input)+"_withitself.pdf");
+
+###########################################################################
 
 
 
