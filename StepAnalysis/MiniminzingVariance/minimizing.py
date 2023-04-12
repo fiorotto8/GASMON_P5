@@ -17,10 +17,6 @@ if not os.path.exists("output_plots"):
 
 ROOT.gROOT.SetBatch(True)
 
-parser = argparse.ArgumentParser()
-parser.add_argument("-n", "--name", help="set the name of the dataset",default=None)
-args = parser.parse_args()
-
 
 def plot_plot(marker,color,x,y,e_x,e_y,title_x, title_y):
 

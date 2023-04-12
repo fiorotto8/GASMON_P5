@@ -17,7 +17,7 @@ if not os.path.exists("output_plots"):
 ROOT.gROOT.SetBatch(True)
 
 parser = argparse.ArgumentParser()
-#parser.add_argument("-n", "--name", help="set the name of the dataset",default=None)
+parser.add_argument("-n", "--name", help="set the name of the dataset",default=None)
 parser.add_argument("-m", "--method", help="Set the correction metod: m or f",default=None)
 args = parser.parse_args()
 
@@ -242,7 +242,9 @@ def correction(G,err_G,t,p):
 
     return [corr, error]
 
-main=ROOT.TFile(str(to_corr)+"_corrected_with_"+str(correction_par)+".root","RECREATE")
+if args.name is None: main=ROOT.TFile(str(to_corr)+"_corrected_with_"+str(correction_par)+".root","RECREATE")
+else: main=ROOT.TFile(args.name+".root","RECREATE")
+
 
 ############################################################################################
 
@@ -336,8 +338,12 @@ cv_scat.Update()
 
 cv_scat.Write()
 
-cv_scat.SaveAs("./output_plots/"+"Corrected_"+str(to_corr)+"_with_"+str(correction_par)+"GasGain-scatter_selected.png");
-cv_scat.SaveAs("./output_plots/"+"Corrected_"+str(to_corr)+"_with_"+str(correction_par)+"GasGain-scatter_selected.pdf");
+if args.name is None:
+    cv_scat.SaveAs("./output_plots/"+"Corrected_"+str(to_corr)+"_with_"+str(correction_par)+"GasGain-scatter_selected.png");
+    cv_scat.SaveAs("./output_plots/"+"Corrected_"+str(to_corr)+"_with_"+str(correction_par)+"GasGain-scatter_selected.pdf");
+else:
+    cv_scat.SaveAs("./output_plots/"+args.name+"_GasGain-scatter_selected.png");
+    cv_scat.SaveAs("./output_plots/"+args.name+"_GasGain-scatter_selected.pdf");
 
 #################################################################################################
 
@@ -345,7 +351,8 @@ cv_scat.SaveAs("./output_plots/"+"Corrected_"+str(to_corr)+"_with_"+str(correcti
 #create DataFrame
 dt=pd.DataFrame( { "Corrected Gain":corrz[0], "err Gain": corrz[1]   } )
 #write dataframe
-dt.to_csv("Corrected_"+str(to_corr)+"_with_"+str(correction_par)+".csv", sep=';', header=True, index=False, mode='w')
+if args.name is None: dt.to_csv("Corrected_"+str(to_corr)+"_with_"+str(correction_par)+".csv", sep=';', header=True, index=False, mode='w')
+else: dt.to_csv(args.name+".csv", sep=';', header=True, index=False, mode='w')
 
 
 

@@ -17,10 +17,6 @@ ROOT.gROOT.SetBatch(True)
 if not os.path.exists("output_plots"):
     os.makedirs("output_plots")
 
-parser = argparse.ArgumentParser()
-parser.add_argument("-n", "--name", help="set the name of the dataset",default=None)
-args = parser.parse_args()
-
 def plot_plot(marker,color,x,y,e_x,e_y,title_x, title_y):
 
     x=nparr(x)
@@ -194,8 +190,7 @@ print(rate)
 gain=-1*nparr(df["Mean Current"])/(200*1.6E-19*rate)
 err_gain=nparr(df["Mean Error"])/(200*1.6E-19*rate)
 
-if args.name is None: input=input
-else: input=args.name
+
 
 print("#################################################################################################################")
 print("CSV file columns: ")
