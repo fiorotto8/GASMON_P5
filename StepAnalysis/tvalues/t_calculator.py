@@ -12,6 +12,9 @@ import uproot
 import math as m
 import os
 
+if not os.path.exists("output_plots"):
+    os.makedirs("output_plots")
+
 ROOT.gROOT.SetBatch(True)
 
 def nparr(string):
