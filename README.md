@@ -17,7 +17,7 @@ pip3 install --user -r requirements.txt
 
 ## Ensure the synchronization of the remote log directory
 Raw data are stored in `~/GasMon/Readout/logs/` on the remote machine. We use `rsync` to synchronize the local folder `All_data/logs`.
-The GasMon PC is not open to a direct connection outside CERN so a tunnel to a plus machine (or any PC on the CERN General Network is required)
+The GasMon PC is not open to a direct connection outside CERN so a tunnel to a lxplus machine (or any PC on the CERN General Network is required)
 ### Add on your machine's ~/.ssh/config
 ```
 Host lxplus
@@ -33,16 +33,15 @@ Before running, you should give it permissions
 ```
 sudo chmod 777 All_data/download_data.sh
 ```
-Passwords of your plus and later of the GasMon machine are requested.
+Passwords of your lxplus and later of the GasMon machine are requested.
 
 
 # 1 Create Dataset
 For any kind of the following analysis, you should generate a dataset that spans over a certain amount of time. The raw files from the GasMon are divided into days but the ```Script_downloadAggregate/create_dataset.py``` do the aggregation for you.
 When running, the script will ask you for the start date and the stop date. you can write `max` on the start to use the oldest file and `max` on the stop date to use the today value.
 The default dataset name is composed of the dates, using `-n` as an argument you can set a dedicated name for the dataset.
-**Remember that all the data contained in the generated dataset are the ones from the GasMon machine. The correction and the manipulation made locally by the GasMon system may be different from what you want**
-**For monitoring purposes of the _beahvious of GASMON system the_ output `.root` is very useful*
-**
+*Remember that all the data contained in the generated dataset are the ones from the GasMon machine. The correction and the manipulation made locally by the GasMon system may be different from what you want*
+**For monitoring purposes of the behaviors of GASMON system the_ output `.root` is very useful**
 # 2 Calibration Data
 For most of the analysis you have to do here you need calibration data. In particular, the measurement of the initial gain, rate and temperature and pressure. Such measurements are usually contained in a specific directory with the date. The calibration is required to have a good correction parameter estimation. In particular to have a good measurement of the parameters *A* and *B*.
 Every folder contains a `qc5.py` script that takes in input the `.csv` file with the data measured that particular calibration day. the script output the `fit_parameters.txt` file that is used by other codes
