@@ -366,7 +366,7 @@ plot.Write()
 
 
 for i in range(len(col)):
-
+    #print(col[i],result[col[i]])
     plot = ROOT.TGraph(len(result[col[0]]),  time  ,   nparr(result[col[i]]) )
     plot.GetXaxis().SetTimeDisplay(1);
     plot.GetXaxis().SetTimeOffset(0);

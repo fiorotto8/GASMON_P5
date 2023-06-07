@@ -183,7 +183,7 @@ for i in range(bins):
     pk[i]=hist.GetBinContent(i)
     xk[i]=hist.GetBinCenter(i)
 
-threshold=np.arange(0,4,0.1)
+threshold=np.arange(0,,0.1)
 
 prob, err_prob=np.zeros(len(threshold)),np.zeros(len(threshold))
 
